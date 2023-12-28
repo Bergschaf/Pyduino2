@@ -1,0 +1,9 @@
+
+test:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+00000000000100b0 <__BSS_END__-0x1008>:
+   100b0:	00a00513          	li	a0,10
+   100b4:	00a50493          	add	s1,a0,10
