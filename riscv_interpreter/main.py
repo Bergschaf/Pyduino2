@@ -26,7 +26,7 @@ def init(file):
 
 def run_next(memory, registers):
     inst = memory.load_word(registers.pc)
-    print(f"Instruction: {inst:08X}")
+    print(f"Instruction: {inst:08X} | {inst:032b}")
     print(f"PC: {registers.pc} | 0x{registers.pc:08X}")
     instruction = Instructions.match(inst)
     registers.pc += 4

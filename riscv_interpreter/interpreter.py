@@ -226,8 +226,12 @@ class Instructions:
 
     @staticmethod
     def jal(inst: IType, registers: Registers):
-        inst.imm = inst.imm >> 1 << 1
-        print("imm", inst.imm, hex(inst.imm))
+        twelve_nineteen = inst.imm >> 13
+        eleven = (inst.imm >> 12) & 1
+        one_ten = (inst.imm >> 1) & 0b1111111111
+        twenty = inst.imm >> 20
+        imm = (twenty << 20) | (eleven << 19) | one_ten | (twelve_nineteen << 11)
+        print("imm", imm, hex(imm), bin(imm))
         target_adress = inst.imm + registers.pc
         print("target", target_adress, hex(target_adress))
         registers[inst.rd] = registers.pc + 4
