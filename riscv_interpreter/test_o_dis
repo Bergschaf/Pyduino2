@@ -1,0 +1,12 @@
+
+test.o:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+0000000000000000 <.text>:
+   0:	00a00513          	li	a0,10
+   4:	ff650493          	add	s1,a0,-10
+   8:	00a4f193          	and	gp,s1,10
+   c:	00a4b213          	sltiu	tp,s1,10
+  10:	00b4a293          	slti	t0,s1,11

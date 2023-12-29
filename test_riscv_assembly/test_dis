@@ -1,0 +1,10 @@
+
+test:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+00000000000100b0 <_start>:
+   100b0:	00700513          	li	a0,7
+   100b4:	05d00893          	li	a7,93
+   100b8:	00000073          	ecall

@@ -1,0 +1,32 @@
+
+Elf file type is EXEC (Executable file)
+Entry point 0x10420
+There are 7 program headers, starting at offset 64
+
+Program Headers:
+  Type           Offset             VirtAddr           PhysAddr
+                 FileSiz            MemSiz              Flags  Align
+  RISCV_ATTRIBUT 0x00000000000cbd35 0x0000000000000000 0x0000000000000000
+                 0x000000000000004b 0x0000000000000000  R      0x1
+  LOAD           0x0000000000000000 0x0000000000010000 0x0000000000010000
+                 0x0000000000066507 0x0000000000066507  R E    0x1000
+  LOAD           0x0000000000066be0 0x0000000000077be0 0x0000000000077be0
+                 0x0000000000065128 0x000000000006a658  RW     0x1000
+  NOTE           0x00000000000001c8 0x00000000000101c8 0x00000000000101c8
+                 0x0000000000000020 0x0000000000000020  R      0x4
+  TLS            0x0000000000066be0 0x0000000000077be0 0x0000000000077be0
+                 0x0000000000000018 0x0000000000000058  R      0x8
+  GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000
+                 0x0000000000000000 0x0000000000000000  RW     0x10
+  GNU_RELRO      0x0000000000066be0 0x0000000000077be0 0x0000000000077be0
+                 0x0000000000063420 0x0000000000063420  R      0x1
+
+ Section to Segment mapping:
+  Segment Sections...
+   00     .riscv.attributes 
+   01     .note.ABI-tag .rela.dyn .text .rodata .eh_frame .gcc_except_table 
+   02     .tdata .preinit_array .init_array .fini_array .data.rel.ro .data .got .sdata .bss 
+   03     .note.ABI-tag 
+   04     .tdata .tbss 
+   05     
+   06     .tdata .preinit_array .init_array .fini_array .data.rel.ro 

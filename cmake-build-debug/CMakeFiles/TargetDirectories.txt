@@ -1,0 +1,3 @@
+/home/bergschaf/PycharmProjects/Pyduino2/cmake-build-debug/CMakeFiles/Pyduino2.dir
+/home/bergschaf/PycharmProjects/Pyduino2/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/bergschaf/PycharmProjects/Pyduino2/cmake-build-debug/CMakeFiles/rebuild_cache.dir

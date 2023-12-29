@@ -1,4 +1,4 @@
-print("Hello World")
-for i in range(10):
-    print(i)
-exec("print('sehr gut')")
+def f(a):
+    print(a)
+
+if __name__ == '__main__'
