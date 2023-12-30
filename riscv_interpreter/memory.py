@@ -7,6 +7,7 @@ class Memory:
         self.memory = np.zeros(size, dtype=np.uint8)
 
     def store_bytes(self, address, bytes):
+        print("store: ", address, self.start_adress,bytes)
         for i, byte in enumerate(bytes):
             self.memory[address + i - self.start_adress] = byte
 
@@ -28,6 +29,7 @@ class Memory:
         return int.from_bytes(self.load_bytes(address, 4), byteorder="little")
 
     def load_doubleword(self, address):
+        print("load dw:", address, hex(int.from_bytes(self.load_bytes(address, 8), byteorder="little")))
         return int.from_bytes(self.load_bytes(address, 8), byteorder="little")
 
     def load_halfword(self, address):

@@ -7,6 +7,7 @@ def int_from_bin(a: int, word_size=XLEN):
         a = a - (1 << word_size)
     return a
 
+
 def int_to_bin(a: int, word_size=XLEN):
     # twos complement
     if a < 0:
@@ -14,14 +15,52 @@ def int_to_bin(a: int, word_size=XLEN):
     return a
 
 
-def sign_extend(a: int, word_size=XLEN):
-    # twos complement
-    if a & (1 << (word_size - 1)):
-        a = a - (1 << word_size)
-    return a
+def se(value, bits=XLEN):
+    sign_bit = 1 << (bits - 1)
+    return (value & (sign_bit - 1)) - (value & sign_bit)
+
+def sign_extend(value, curr, bits=XLEN):
+    if curr >= bits:
+        return value
+    sign_bit = 1 << (curr - 1)
+    return int_to_bin((value & (sign_bit - 1)) - (value & sign_bit))
 
 
 class Registers:
+    NAMES = {
+        0: "zero",
+        1: "ra",
+        2: "sp",
+        3: "gp",
+        4: "tp",
+        5: "t0",
+        6: "t1",
+        7: "t2",
+        8: "s0/fp",
+        9: "s1",
+        10: "a0",
+        11: "a1",
+        12: "a2",
+        13: "a3",
+        14: "a4",
+        15: "a5",
+        16: "a6",
+        17: "a7",
+        18: "s2",
+        19: "s3",
+        20: "s4",
+        21: "s5",
+        22: "s6",
+        23: "s7",
+        24: "s8",
+        25: "s9",
+        26: "s10",
+        27: "s11",
+        28: "t3",
+        29: "t4",
+        30: "t5",
+        31: "t6",
+    }
 
     def __init__(self):
         self.registers = [0] * 32
@@ -38,7 +77,7 @@ class Registers:
         self.registers[key] = value
 
     def __repr__(self):
-        return "\n".join(str(x) + ": " + str(self[x]) for x in range(32) if self[x])
+        return "\n".join(str(x) + ": " + str(int_from_bin(self[x])) + f" | {hex(self[x])} ({self.NAMES[x]})" for x in range(32) if self[x])
 
 
 class InstructionType:
@@ -54,10 +93,18 @@ class InstructionType:
         self.funct7 = None
 
     def __repr__(self):
-        vars = ("opcode", "rd", "rs1", "rs2", "funct3", "funct7")
-        return "\n".join(
-            x + ":" + str(self.__dict__[x]) for x in vars if self.__dict__[x] is not None) + "\nimm: " + str(self.imm)
-
+        # print all attributes of the class
+        return f"""Instruction:
+        opcode: {bin(self.opcode)}
+        rd: {self.rd} | {Registers.NAMES[self.rd] if self.rd is not None else None}
+        rs1: {self.rs1} | {Registers.NAMES[self.rs1] if self.rs1 is not None else None}
+        rs2: {self.rs2} | {Registers.NAMES[self.rs2] if self.rs2 is not None else None}
+        imm: {int_from_bin(self.imm) if self.imm is not None else None} | {bin(self.imm) if self.imm is not None else None}
+        funct3: {bin(self.funct3) if self.funct3 is not None else None}
+        funct7: {bin(self.funct7) if self.funct7 is not None else None}
+        """
+        
+        
 
 class RType(InstructionType):
     def decode(self):
@@ -71,11 +118,13 @@ class RType(InstructionType):
 
 class SType(InstructionType):
     def decode(self):
-        self.imm_left = (self.inst >> 7) & 0b11111
         self.funct3 = (self.inst >> 12) & 0b111
         self.rs1 = (self.inst >> 15) & 0b11111
         self.rs2 = (self.inst >> 20) & 0b11111
-        self.imm = self.inst >> 25
+
+        imm40 = (self.inst >> 7) & 0b11111
+        imm115 = (self.inst >> 25) & 0b1111111
+        self.imm = sign_extend((imm115 << 5) | imm40, 12)
         return self
 
 
@@ -84,21 +133,45 @@ class IType(InstructionType):
         self.rd = (self.inst >> 7) & 0b11111
         self.funct3 = (self.inst >> 12) & 0b111
         self.rs1 = (self.inst >> 15) & 0b11111
-        self.imm = int_from_bin(self.inst >> 20, word_size=12)
+        self.imm = sign_extend(self.inst >> 20, 12)
         return self
 
 
 class UType(InstructionType):
     def decode(self):
         self.rd = (self.inst >> 7) & 0b11111
-        self.imm = self.inst >> 12
+        self.imm = self.inst & 0xfffff000
         return self
+
 
 class JType(InstructionType):
     def decode(self):
         self.rd = (self.inst >> 7) & 0b11111
-        self.imm = self.inst >> 12
+        imm = (self.inst >> 12) & 0xfffff
+        imm20 = (imm >> 19) & 1
+        imm101 = (imm >> 9) & 0b1111111111
+        imm11 = (imm >> 8) & 1
+        imm1912 = imm & 0b11111111
+        self.imm = (imm20 << 20) | (imm1912 << 12) | (imm11 << 11) | (imm101 << 1)
+        self.imm = sign_extend(self.imm, 21)
         return self
+
+
+class BType(InstructionType):
+    def decode(self):
+        imm4111 = (self.inst >> 7) & 0b11111
+        self.funct3 = (self.inst >> 12) & 0b111
+        self.rs1 = (self.inst >> 15) & 0b11111
+        self.rs2 = (self.inst >> 20) & 0b11111
+        imm121015 = (self.inst >> 25) & 0b111111
+        imm12 = (imm121015 & 0b1000000) >> 6
+        imm105 = imm121015 & 0b111111
+        imm41 = (imm4111 & 0b11110) >> 1
+        imm11 = imm4111 & 0b1
+        imm = (imm12 << 12) | (imm11 << 11) | (imm105 << 5) | (imm41 << 1)
+        self.imm = sign_extend(imm, 12)
+        return self
+
 
 class Instruction:
     def __init__(self, values: InstructionType, func):
@@ -115,7 +188,7 @@ class Instruction:
 class Instructions:
     @staticmethod
     def addi(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] + sign_extend(inst.imm)
+        registers[inst.rd] = registers[inst.rs1] + inst.imm
 
     @staticmethod
     def slli(inst: IType, registers: Registers):
@@ -136,37 +209,38 @@ class Instructions:
 
     @staticmethod
     def slti(inst: IType, registers: Registers):
-        if int_from_bin(registers[inst.rs1]) < int_to_bin(sign_extend(inst.imm)):
+        # TODO Test
+        if int_from_bin(registers[inst.rs1]) < inst.imm:
             registers[inst.rd] = 1
         else:
             registers[inst.rd] = 0
 
     @staticmethod
     def sltiu(inst: IType, registers: Registers):
-        if registers[inst.rs1] < sign_extend(inst.imm):
+        if registers[inst.rs1] < inst.imm:
             registers[inst.rd] = 1
         else:
             registers[inst.rd] = 0
 
     @staticmethod
     def andi(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] & sign_extend(inst.imm)
+        registers[inst.rd] = registers[inst.rs1] & inst.imm
 
     @staticmethod
     def ori(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] | sign_extend(inst.imm)
+        registers[inst.rd] = registers[inst.rs1] | inst.imm
 
     @staticmethod
     def xori(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] ^ sign_extend(inst.imm)
+        registers[inst.rd] = registers[inst.rs1] ^ inst.imm
 
     @staticmethod
     def lui(inst: IType, registers: Registers):
-        registers[inst.rd] = inst.imm << 12
+        registers[inst.rd] = sign_extend(inst.imm, 32)
 
     @staticmethod
     def auipc(inst: IType, registers: Registers):
-        registers[inst.rd] = registers.pc + (inst.imm << 12)
+        registers[inst.rd] = int_to_bin(registers.pc + int_from_bin(sign_extend(inst.imm, 32)))
 
     @staticmethod
     def add(inst: IType, registers: Registers):
@@ -206,36 +280,181 @@ class Instructions:
 
     @staticmethod
     def sll(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] << (registers[inst.rs2] & 0b11111)
+        registers[inst.rd] = registers[inst.rs1] << (registers[inst.rs2] & 0b111111)
 
     @staticmethod
     def srl(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] >> (registers[inst.rs2] & 0b11111)
+        registers[inst.rd] = registers[inst.rs1] >> (registers[inst.rs2] & 0b111111)
 
     @staticmethod
     def sra(inst: IType, registers: Registers):
         # https://stackoverflow.com/questions/64963170/how-to-do-arithmetic-right-shift-in-python-for-signed-and-unsigned-values
 
-        sham = registers[inst.rs2] & 0b11111
+        sham = registers[inst.rs2] & 0b111111
         if registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
             filler = int('1' * sham + '0' * (XLEN - sham), 2)
             registers[inst.rd] = (registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
         else:
-            registers[inst.rd] =  registers[inst.rs1] >> sham
-
+            registers[inst.rd] = registers[inst.rs1] >> sham
 
     @staticmethod
     def jal(inst: IType, registers: Registers):
-        twelve_nineteen = inst.imm >> 13
-        eleven = (inst.imm >> 12) & 1
-        one_ten = (inst.imm >> 1) & 0b1111111111
-        twenty = inst.imm >> 20
-        imm = (twenty << 20) | (eleven << 19) | one_ten | (twelve_nineteen << 11)
-        print("imm", imm, hex(imm), bin(imm))
-        target_adress = inst.imm + registers.pc
-        print("target", target_adress, hex(target_adress))
+        target_adress = int_from_bin(inst.imm) + registers.pc
         registers[inst.rd] = registers.pc + 4
         registers.pc = target_adress
+
+    @staticmethod
+    def lw(inst: IType, registers: Registers):
+        registers[inst.rd] = sign_extend(registers.memory.load_word(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm)), 32)
+
+    @staticmethod
+    def lb(inst: IType, registers: Registers):
+        registers[inst.rd] = sign_extend(registers.memory.load_byte(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm)), 8)
+
+    @staticmethod
+    def lh(inst: IType, registers: Registers):
+        registers[inst.rd] = sign_extend(registers.memory.load_halfword(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm)), 16)
+
+    @staticmethod
+    def lbu(inst: IType, registers: Registers):
+        registers[inst.rd] = registers.memory.load_byte(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm))
+
+    @staticmethod
+    def lhu(inst: IType, registers: Registers):
+        registers[inst.rd] = registers.memory.load_halfword(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm))
+
+    @staticmethod
+    def lwu(inst: IType, registers: Registers):
+        registers[inst.rd] = registers.memory.load_word(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm))
+
+    @staticmethod
+    def ld(inst: IType, registers: Registers):
+        registers[inst.rd] = registers.memory.load_doubleword(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm))
+
+    @staticmethod
+    def sb(inst: IType, registers: Registers):
+        registers.memory.store_byte(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm),
+                                    registers[inst.rs2] & 0xff)
+
+    @staticmethod
+    def sh(inst: IType, registers: Registers):
+        registers.memory.store_halfword(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm),
+                                        registers[inst.rs2] & 0xffff)
+
+    @staticmethod
+    def sw(inst: IType, registers: Registers):
+        registers.memory.store_word(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm),
+                                    registers[inst.rs2] & 0xffffffff)
+
+    @staticmethod
+    def sd(inst: IType, registers: Registers):
+        registers.memory.store_doubleword(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm),
+                                          registers[inst.rs2])
+
+    @staticmethod
+    def beq(inst: IType, registers: Registers):
+        if registers[inst.rs1] == registers[inst.rs2]:
+            registers.pc += int_from_bin(inst.imm)
+
+    @staticmethod
+    def bne(inst: IType, registers: Registers):
+        if registers[inst.rs1] != registers[inst.rs2]:
+            registers.pc += int_from_bin(inst.imm)
+
+    @staticmethod
+    def blt(inst: IType, registers: Registers):
+        if int_from_bin(registers[inst.rs1]) < int_from_bin(registers[inst.rs2]):
+            registers.pc += int_from_bin(inst.imm)
+
+    @staticmethod
+    def bltu(inst: IType, registers: Registers):
+        if registers[inst.rs1] < registers[inst.rs2]:
+            registers.pc += int_from_bin(inst.imm)
+
+    @staticmethod
+    def bge(inst: IType, registers: Registers):
+        if int_from_bin(registers[inst.rs1]) >= int_from_bin(registers[inst.rs2]):
+            registers.pc += int_from_bin(inst.imm)
+
+    @staticmethod
+    def bgeu(inst: IType, registers: Registers):
+        if registers[inst.rs1] >= registers[inst.rs2]:
+            registers.pc += int_from_bin(inst.imm)
+
+    @staticmethod
+    def addw(inst: IType, registers: Registers):
+        registers[inst.rd] = sign_extend(int_to_bin(int_from_bin(registers[inst.rs1]) + int_from_bin(registers[inst.rs2])) & 0xffffffff, 32)
+
+    @staticmethod
+    def subw(inst: IType, registers: Registers):
+        registers[inst.rd] = sign_extend(int_to_bin(int_from_bin(registers[inst.rs1]) - int_from_bin(registers[inst.rs2])) & 0xffffffff, 32)
+
+    @staticmethod
+    def sllw(inst: IType, registers: Registers):
+        registers[inst.rd] = (registers[inst.rs1] << (registers[inst.rs2] & 0b11111))& 0xffffffff
+
+    @staticmethod
+    def srlw(inst: IType, registers: Registers):
+        registers[inst.rd] = (registers[inst.rs1] & 0xffffffff) >> (registers[inst.rs2] & 0b111111)
+
+    @staticmethod
+    def sraw(inst: IType, registers: Registers):
+        # https://stackoverflow.com/questions/64963170/how-to-do-arithmetic-right-shift-in-python-for-signed-and-unsigned-values
+
+        sham = registers[inst.rs2] & 0b111111
+        registers[inst.rs1] &= 0xffffffff
+        if registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
+            filler = int('1' * sham + '0' * (XLEN - sham), 2)
+            registers[inst.rd] = (registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
+        else:
+            registers[inst.rd] = registers[inst.rs1]  >> sham
+
+    @staticmethod
+    def addiw(inst: IType, registers: Registers):
+        registers[inst.rd] = sign_extend((registers[inst.rs1] & 0xffffffff) + (inst.imm & 0b11111),32)
+
+    @staticmethod
+    def slliw(inst: IType, registers: Registers):
+        registers[inst.rd] = sign_extend((registers[inst.rs1] & 0xffffffff) << (inst.imm & 0b11111),32)
+
+    @staticmethod
+    def srliw(inst: IType, registers: Registers):
+        registers[inst.rd] = (registers[inst.rs1] & 0xffffffff) >> (inst.imm & 0b11111)
+
+    @staticmethod
+    def sraiw(inst: IType, registers: Registers):
+        sham = inst.imm & 0b11111
+        registers[inst.rs1] &= 0xffffffff
+        if registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
+            filler = int('1' * sham + '0' * (XLEN - sham), 2)
+            registers[inst.rd] = (registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
+        else:
+            registers[inst.rd] = registers[inst.rs1] >> sham
+    @staticmethod
+    def jalr(inst: IType, registers: Registers):
+        target_adress = int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm)
+        target_adress = target_adress >> 1 << 1
+        registers[inst.rd] = int_to_bin(registers.pc + 4)
+        registers.pc = target_adress
+
+    @staticmethod
+    def noop(inst: IType, registers: Registers):
+        print(inst)
+        print(registers)
+        print(registers.memory.load_bytes(81464,1000))
+        exit()
+
+    @staticmethod
+    def ebreak(inst: IType, registers: Registers):
+        return True
+
+    @staticmethod
+    def xxx(inst: IType, registers: Registers):
+        pass
+
+    @staticmethod
+    def xxx(inst: IType, registers: Registers):
+        pass
 
     @staticmethod
     def xxx(inst: IType, registers: Registers):
@@ -324,9 +543,113 @@ class Instructions:
             case 0b1101111:
                 return Instruction(JType(inst).decode(), Instructions.jal)
 
+            case 0b0000011:
+                # Load instructions
+                inst = IType(inst).decode()
+                match inst.funct3:
+                    case 0b000:
+                        return Instruction(inst, Instructions.lb)
+                    case 0b001:
+                        return Instruction(inst, Instructions.lh)
+                    case 0b100:
+                        return Instruction(inst, Instructions.lbu)
+                    case 0b101:
+                        return Instruction(inst, Instructions.lhu)
+                    case 0b010:
+                        return Instruction(inst, Instructions.lw)
+                    case 0b110:
+                        return Instruction(inst, Instructions.lwu)
+                    case 0b011:
+                        return Instruction(inst, Instructions.ld)
+
+            case 0b0100011:
+                # Store instructions
+                inst = SType(inst).decode()
+                match inst.funct3:
+                    case 0b000:
+                        return Instruction(inst, Instructions.sb)
+                    case 0b001:
+                        return Instruction(inst, Instructions.sh)
+                    case 0b010:
+                        return Instruction(inst, Instructions.sw)
+                    case 0b011:
+                        return Instruction(inst, Instructions.sd)
+
+            case 0b1100011:
+                # Branch instructions
+                inst = BType(inst).decode()
+                match inst.funct3:
+                    case 0b000:
+                        return Instruction(inst, Instructions.beq)
+                    case 0b001:
+                        return Instruction(inst, Instructions.bne)
+                    case 0b100:
+                        return Instruction(inst, Instructions.blt)
+                    case 0b101:
+                        return Instruction(inst, Instructions.bge)
+                    case 0b110:
+                        return Instruction(inst, Instructions.bltu)
+                    case 0b111:
+                        return Instruction(inst, Instructions.bgeu)
+
+            case 0b0111011:
+                # W instructions
+                inst = RType(inst).decode()
+                match inst.funct3:
+                    case 0b000:
+                        if inst.funct7 >> 5 == 0:
+                            return Instruction(inst, Instructions.addw)
+                        elif inst.funct7 >> 5 == 1:
+                            return Instruction(inst, Instructions.subw)
+                        else:
+                            raise Exception("Wrong func7")
+
+                    case 0b001:
+                        return Instruction(inst, Instructions.sllw)
+
+                    case 0b101:
+                        if inst.funct7 >> 5 == 0:
+                            return Instruction(inst, Instructions.srlw)
+                        elif inst.funct7 >> 5 == 1:
+                            return Instruction(inst, Instructions.sraw)
+                        else:
+                            raise Exception("Wrong func7")
+            case 0b0011011:
+                # W immediate instructions
+                inst = IType(inst).decode()
+                match inst.funct3:
+                    case 0b000:
+                        return Instruction(inst, Instructions.addiw)
+                    case 0b001:
+                        return Instruction(inst, Instructions.slliw)
+                    case 0b101:
+                        if inst.imm >> 10 == 0:
+                            return Instruction(inst, Instructions.srliw)
+                        elif inst.funct7 >> 10 == 1:
+                            # TODO test
+                            return Instruction(inst, Instructions.sraiw)
+                        else:
+                            raise Exception("Wrong immediate end end encoding thing")
+            case 0b1100111:
+                return Instruction(IType(inst).decode(), Instructions.jalr)
+
+            case 0b1110011:
+                # ECall
+                return Instruction(IType(inst).decode(), Instructions.noop)
+
+            case 0b1111011:
+                # EBreak
+                return Instruction(IType(inst).decode(), Instructions.ebreak)
+
+
             case _:
                 print(f"Opcode: {bin(opcode)}")
                 raise Exception("not gud")
+
+        print(f"Opcode: {bin(opcode)}")
+
+        raise Exception("not gud")
+
 
 if __name__ == '__main__':
 
