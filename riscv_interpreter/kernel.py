@@ -134,6 +134,7 @@ class Kernel:
         self.elf = elf
         self.log_level = log_level  # 0: not important, 1: important, 2: very important, 3: critical, 10: stdout
         self.filesystem = Filesystem()
+        self.testing = False
 
     def log(self, *messages, priority=0, end="\n"):
         # -> higher priority = more important
@@ -165,6 +166,9 @@ class Kernel:
         a5 = self.registers[15]
         n = self.registers[17]
         print("syscall: ", n)
+        if self.testing:
+            if
+
         if n in self.SYSCALL_TABLE:
             ret = self.SYSCALL_TABLE[n](self, a0, a1, a2, a3, a4, a5, n)
         else:
