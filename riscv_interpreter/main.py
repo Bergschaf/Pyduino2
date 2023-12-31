@@ -2,6 +2,7 @@ from interpreter import Registers, Instructions
 from memory import Memory
 from elf_loader import ELF_File
 import termcolor
+from kernel import Kernel
 
 OUT = False
 LITTLE_OUT = True
@@ -23,52 +24,46 @@ def init(file):
     # initialize registers
     registers = Registers()
     registers.pc = elf.entry_pos
-    registers.memory = memory
+    kernel = Kernel(memory, registers, elf)
+    return kernel
 
-    return memory, registers, elf
-
-def run_next(memory, registers):
-    inst = memory.load_word(registers.pc)
-    if OUT:
-        print(f"Instruction: {inst:08X} | {inst:032b}")
-        print(f"PC: {registers.pc} | " + termcolor.colored(f'0x{registers.pc:08X}','white', force_color=True))
-    prev_pc = registers.pc
+def run_next(kernel):
+    inst = kernel.memory.load_word(kernel.registers.pc)
+    kernel.log(f"Instruction: {inst:08X} | {inst:032b}")
+    kernel.log(f"PC: {kernel.registers.pc} | " + termcolor.colored(f'0x{kernel.registers.pc:08X}','white', force_color=True))
+    prev_pc = kernel.registers.pc
     instruction = Instructions.match(inst)
-    if OUT: print(instruction)
-    res = instruction.do(registers)
+    kernel.log(instruction)
+    res = instruction.do(kernel.registers)
     if res is not None:
         return res
-    if registers.pc == prev_pc:
-        registers.pc += 4
+    if kernel.registers.pc == prev_pc:
+        kernel.registers.pc += 4
 
-def run(memory, registers, elf):
+def run(kernel):
     num_instructions = 0
     while True:
-        res = run_next(memory, registers)
+        res = run_next(kernel)
         if res is not None:
             return res
         num_instructions += 1
-        if OUT:
-            print("\nRegisters:")
-            print(registers)
-            print(f"Instruction count: {num_instructions}")
-            print()
-            print()
+        kernel.log("Registers:\n", registers)
+        kernel.log(f"Instruction count: {num_instructions}\n\n")
 
 def run_test_file(file):
     # end with ebreak instruction
     # ONLY FOR TESTING
-    memory, registers, elf = init(file)
-    registers.testing = True
-    run(memory, registers, elf)
-    return registers, memory
+    kernel = init(file)
+    kernel.registers.testing = True
+    run(kernel)
+    return kernel.registers,kernel.memory
 
 
 
 if __name__ == '__main__':
     file = "test"
-    memory, registers, elf = init(file)
-    run(memory, registers, elf)
+    kernel = init(file)
+    run(kernel)
 
     #11f88 -> evlt stdout ecall
     #12014 -> evlt stio ecall

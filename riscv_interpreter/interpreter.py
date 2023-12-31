@@ -186,7 +186,9 @@ class Instruction:
         return str(self.values) + "\n" + self.func.__name__ + "\n\n"
 
 
+
 class Instructions:
+
     @staticmethod
     def addi(inst: IType, registers: Registers):
         registers[inst.rd] = registers[inst.rs1] + inst.imm
@@ -439,33 +441,8 @@ class Instructions:
         registers.pc = target_adress
 
     @staticmethod
-    def noop(inst: IType, registers: Registers):
-        if registers.testing:
-            return True
-        if registers[17] == 93:
-            print("Ecall Exit")
-            exit(12)
-        if registers[17] == 66:
-            # sys_writev
-            print(registers)
-            fd = int_from_bin(registers[10])
-            address = int_from_bin(registers[11])
-            count = int_from_bin(registers[12])
-            res = 0
-            for i in range(count):
-                iov_base = int_from_bin(registers.memory.load_word(address + i * 16), 32)
-                iov_len = registers.memory.load_word(address + i * 16 + 8)
-                byt = registers.memory.load_bytes(iov_base, iov_len)
-                print(iov_base,iov_len)
-                print(colored(bytes(byt).decode("utf-8"),"green", force_color=True), end="")
-                res += len(bytes(byt).decode("utf-8"))
-
-            registers[10] = res
-            #-232 vlt string da
-        else:
-            print("Ecall", registers[17])
-            #print(registers)
-        #exit(12)
+    def ecall(inst: IType, registers: Registers):
+        kernel.
 
     @staticmethod
     def ebreak(inst: IType, registers: Registers):
@@ -658,7 +635,7 @@ class Instructions:
 
             case 0b1110011:
                 # ECall
-                return Instruction(IType(inst).decode(), Instructions.noop)
+                return Instruction(IType(inst).decode(), Instructions.ecall)
 
             case 0b1111011:
                 # EBreak
@@ -667,6 +644,7 @@ class Instructions:
 
             case _:
                 print(f"Opcode: {bin(opcode)}")
+
                 raise Exception("not gud")
 
         print(f"Opcode: {bin(opcode)}")
