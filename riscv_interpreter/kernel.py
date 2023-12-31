@@ -1,10 +1,10 @@
-from interpreter import int_from_bin
+from interpreter import int_from_bin, int_to_bin
 from termcolor import colored
 
 
 class Filesystem:
     SPECIAL_FILES = {
-        "/proc/sys/kernel/osrelease": "6.6.8-arch1-1",
+        "/proc/sys/kernel/osrelease": "none",
     }
 
     def __init__(self):
@@ -24,6 +24,23 @@ class Filesystem:
             fd = self.next_fd()
             self.open_files[fd] = pathname
             return fd
+
+    def close(self, fd):
+        if fd not in self.open_files:
+            raise Exception("File not open")
+        del self.open_files[fd]
+
+    def read(self, fd, count):
+        # TODO implement file offsets
+        if fd not in self.open_files:
+            raise Exception("File not open")
+        pathname = self.open_files[fd]
+        if pathname not in self.files:
+            raise Exception("File not found")
+        if count > len(self.files[pathname]):
+            print("Warning: Reading more bytes than available")
+            count = len(self.files[pathname])
+        return self.files[pathname][:count]
 
 
 class Kernel:
@@ -59,11 +76,11 @@ class Kernel:
     @staticmethod
     def sys_uname(kernel, a0, *_):
         # sys_uname
-        size = 32
-        fillchar = "a"
+        size = 65
+        fillchar = "0"
         kernel.memory.puts(int_from_bin(a0), "Linux".ljust(size - 1, fillchar) + "\x00")
         kernel.memory.puts(int_from_bin(a0) + size * 1, "".ljust(size - 1, fillchar) + "\x00")
-        kernel.memory.puts(int_from_bin(a0) + size * 2, "6.6.8-arch1-1".ljust(size - 1, fillchar) + "\x00")
+        kernel.memory.puts(int_from_bin(a0) + size * 2, "4.15.0".ljust(size - 1, fillchar) + "\x00")
         kernel.memory.puts(int_from_bin(a0) + size * 3, "".ljust(size - 1, fillchar) + "\x00")
         kernel.memory.puts(int_from_bin(a0) + size * 4, "riscv64".ljust(size - 1, fillchar) + "\x00")
         kernel.memory.puts(int_from_bin(a0) + size * 5, "".ljust(size - 1, fillchar) + "\x00")
@@ -74,15 +91,40 @@ class Kernel:
         kernel.log("Open file at: ", kernel.memory.loads(int_from_bin(a1)), priority=2)
         return kernel.filesystem.openat(int_from_bin(a0), kernel.memory.loads(int_from_bin(a1)), int_from_bin(a2))
 
+    @staticmethod
+    def sys_read(kernel, fd, buf, count, *_):
+        # sys_read
+        res = kernel.filesystem.read(int_from_bin(fd), int_from_bin(count))
+        kernel.memory.puts(int_from_bin(buf), res)
+        return len(res)
+
+    @staticmethod
+    def sys_close(kernel, fd, *_):
+        kernel.filesystem.close(int_from_bin(fd))
+        return 0
+
+    @staticmethod
+    def set_tid_address(kernel, a0, *_):
+        return 0
+
+    @staticmethod
+    def sys_mmap(kernel, addr, length, prot, flags, fd, offset, *_):
+        print("mmap:", addr, length, prot, flags, fd, offset)
+        return 0
+
     SYSCALL_TABLE = {
         56: sys_openat,
+        57: sys_close,
+        63: sys_read,
         66: sys_writev,
         93: sys_exit,
+        96: set_tid_address,
         160: sys_uname,
         174: sys_getuid,
         175: sys_getuid,
         176: sys_getuid,
         177: sys_getuid,
+        222: sys_mmap,
         214: sys_brk,
     }
 
@@ -110,7 +152,7 @@ class Kernel:
     def exception(self, cause):
         self.lov_level = 0
         self.log("Exception: ", cause, priority=3)
-        self.log("Program Counter: ", hex(self.registers.pc), priority=2)
+        self.log("Program Counter: ", hex(int_to_bin(self.registers.pc)), priority=2)
         self.log("Registers:\n", self.registers)
         exit(1)
 
@@ -122,9 +164,10 @@ class Kernel:
         a4 = self.registers[14]
         a5 = self.registers[15]
         n = self.registers[17]
+        print("syscall: ", n)
         if n in self.SYSCALL_TABLE:
             ret = self.SYSCALL_TABLE[n](self, a0, a1, a2, a3, a4, a5, n)
         else:
             self.log("Unknown syscall ", n, priority=2)
-            ret = a0
+            ret = -1
         self.registers[10] = ret

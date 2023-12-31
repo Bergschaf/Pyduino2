@@ -1,5 +1,6 @@
+from interpreter import int_from_bin
 
-class ELF_File:
+class ELF_File: # TODO interpret everything as twos complement
     Instruction_Set = {
         0x00: "None",
         0x02: "SPARC",
@@ -103,8 +104,8 @@ class ELF_File:
 
             # check type
             self.type = int.from_bytes(f[16:18], byteorder="little")
-            if self.type != 2:
-                raise Exception("Invalid ELF file")
+            #if self.type != 2:
+            #    raise Exception("Invalid ELF file")
 
             # check instruction set
             self.instruction_set = int.from_bytes(f[18:20], byteorder="little")
@@ -113,7 +114,7 @@ class ELF_File:
             self.instruction_set = self.Instruction_Set[self.instruction_set]
 
             # check entry point
-            self.entry_pos = int.from_bytes(f[24:32], byteorder="little")
+            self.entry_pos = int_from_bin(int.from_bytes(f[24:32], byteorder="little"))
 
             # check program header
             self.program_header_pos = int.from_bytes(f[32:40], byteorder="little")
@@ -176,7 +177,7 @@ class Program_Header:
         self.type = int.from_bytes(f[0:4], byteorder="little")
         self.flags = int.from_bytes(f[4:8], byteorder="little")
         self.offset = int.from_bytes(f[8:16], byteorder="little")
-        self.p_vaddr = int.from_bytes(f[16:24], byteorder="little")
+        self.p_vaddr = int_from_bin(int.from_bytes(f[16:24], byteorder="little"))
         self.p_paddr = int.from_bytes(f[24:32], byteorder="little")
         self.p_filesz = int.from_bytes(f[32:40], byteorder="little")
         self.p_memsz = int.from_bytes(f[40:48], byteorder="little")

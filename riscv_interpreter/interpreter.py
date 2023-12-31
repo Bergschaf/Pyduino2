@@ -359,8 +359,12 @@ class Instructions:
 
     @staticmethod
     def sd(inst: IType, kernel):
+        #print(kernel.registers)
+        # print(int_from_bin(kernel.registers[inst.rs1]))
+        # print(inst.rs1)
+        # print(inst.imm)
         kernel.memory.store_doubleword(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm),
-                                       kernel.registers[inst.rs2])
+        kernel.registers[inst.rs2])
 
     @staticmethod
     def beq(inst: IType, kernel):
@@ -585,6 +589,7 @@ class Instructions:
                         return Instruction(inst, Instructions.sw)
                     case 0b011:
                         return Instruction(inst, Instructions.sd)
+
 
             case 0b1100011:
                 # Branch instructions

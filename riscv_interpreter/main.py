@@ -1,10 +1,12 @@
-from interpreter import Registers, Instructions
+from interpreter import Registers, Instructions, int_to_bin
 from memory import Memory
 from elf_loader import ELF_File
 import termcolor
 from kernel import Kernel
 
-LOG_LEVEL = 2
+LOG_LEVEL = 0
+BREAKPOINTS = [0x1296c]
+
 
 def init(file):
     elf = ELF_File(file).load()
@@ -12,8 +14,10 @@ def init(file):
     to_load = elf.get_program_data()
 
     # load the Segments specified in the program headers
-    memory_size = to_load[-1][2] + to_load[-1][1]  + 20000 # last segment's virtual address + size
+    memory_size = 100000000  # last segment's virtual address + size
     memory = Memory(memory_size)
+    memory.start_adress = 100000
+
     with open(file, "rb") as f:
         f = f.read()
         for segment in to_load:
@@ -26,18 +30,29 @@ def init(file):
     kernel.log("Memory size: ", memory_size, priority=2)
     return kernel
 
+
 def run_next(kernel):
     inst = kernel.memory.load_word(kernel.registers.pc)
     kernel.log(f"Instruction: {inst:08X} | {inst:032b}")
-    kernel.log(f"PC: {kernel.registers.pc} | " + termcolor.colored(f'0x{kernel.registers.pc:08X}','white', force_color=True))
+    kernel.log(f"PC: {kernel.registers.pc} | " + termcolor.colored(f'0x{int_to_bin(kernel.registers.pc):08X}', 'white',
+                                                                   force_color=True))
     prev_pc = kernel.registers.pc
     instruction = Instructions.decode(inst, kernel)
     kernel.log(instruction)
     res = instruction.do(kernel)
     if res is not None:
         return res
+
+    if prev_pc in BREAKPOINTS:
+        print("Breakpoint hit: ", hex(prev_pc))
+        print(kernel.registers)
+        print(kernel.memory.load_bytes(kernel.registers[10],20))
+        input()
+
+
     if kernel.registers.pc == prev_pc:
         kernel.registers.pc += 4
+
 
 def run(kernel):
     num_instructions = 0
@@ -49,22 +64,21 @@ def run(kernel):
         kernel.log("Registers:\n", kernel.registers)
         kernel.log(f"Instruction count: {num_instructions}\n\n")
 
+
 def run_test_file(file):
     # end with ebreak instruction
     # ONLY FOR TESTING
     kernel = init(file)
     kernel.registers.testing = True
     run(kernel)
-    return kernel.registers,kernel.memory
-
+    return kernel.registers, kernel.memory
 
 
 if __name__ == '__main__':
     file = "test"
     kernel = init(file)
+
     run(kernel)
 
-    #11f88 -> evlt stdout ecall
-    #12014 -> evlt stio ecall
-
-
+    # 11f88 -> evlt stdout ecall
+    # 12014 -> evlt stio ecall
