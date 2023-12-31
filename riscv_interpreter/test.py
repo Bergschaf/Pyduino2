@@ -34,6 +34,20 @@ def run_test(instruction_list, expected_dict):
     expected = RegistersExpectedState(**expected_dict)
     expected.compare(registers)
 
+def run_test_registers(register_state, instruction_list, expected_dict):
+    # instruction_list: list of strings of asm instructions
+    # expected_dict: dict of register names and expected values
+    registers, memory = run_asm_instruction_list(instruction_list)
+    for i in register_state:
+        registers[registers.VALUES[i]] = register_state[i]
+    expected_dict = {x: expected_dict[x] for x in expected_dict}  # only for riscv64
+    expected = RegistersExpectedState(**expected_dict)
+    expected.compare(registers)
+    register_state.compare(registers)
+
+def test_run_test_registers():
+    run_test_registers({"x1": 1234}, ["addi x1, x0, 1234"], {"x1": 1234})
+
 
 def test_addi():
     run_test(["addi x1, x0, 1234"], {"x1": 1234})
@@ -145,6 +159,30 @@ def test_ori():
     run_test(["addi x1, x0, 1234", "ori x2, x1, 0"], {"x2": 1234})
     run_test(["addi x1, x0, 0b1110", "ori x2, x1, 0b1111"], {"x2": 0b1111})
     run_test(["addi x1, x0, 0b11111000011", "ori x2, x1, 0b1111111"], {"x2": 0b11111111111})
+
+
+def test_sll():
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 2", "sll x3, x1, x2"], {"x3": 1234 << 2})
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 0", "sll x3, x1, x2"], {"x3": 1234})
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 32", "sll x3, x1, x2"], {"x3": 1234 << 32})
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 31", "sll x3, x1, x2"], {"x3": 1234 << 31})
+    run_test(["addi x1, x0, 1", "addi x2, x0, 63", "sll x3, x1, x2"], {"x3": int_from_bin(1 << 63)})
+
+def test_srl():
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 2", "srl x3, x1, x2"], {"x3": 1234 >> 2})
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 0", "srl x3, x1, x2"], {"x3": 1234})
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 32", "srl x3, x1, x2"], {"x3": 1234 >> 32})
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 31", "srl x3, x1, x2"], {"x3": 0})
+
+def test_sra():
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 2", "sra x3, x1, x2"], {"x3": 1234 >> 2})
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 0", "sra x3, x1, x2"], {"x3": 1234})
+    run_test(["addi x1, x0, 0b1111", "addi x2, x0, 2", "sra x3, x1, x2"], {"x3": 0b11})
+    run_test(["addi x1, x0, 1234", "addi x2, x0, 31", "sra x3, x1, x2"], {"x3": 1234 >> 31})
+
+    run_test(["addi x1, x0, -1", "addi x2, x0, 2", "sra x3, x1, x2"], {"x3": -1})
+    run_test(["addi x1, x0, -1", "addi x2, x0, 0", "sra x3, x1, x2"], {"x3": -1})
+
 
 
 

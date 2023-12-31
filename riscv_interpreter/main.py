@@ -69,7 +69,8 @@ def run_test_file(file):
     # end with ebreak instruction
     # ONLY FOR TESTING
     kernel = init(file)
-    kernel.registers.testing = True
+    kernel.testing = True
+    kernel.log_level = 3
     run(kernel)
     return kernel.registers, kernel.memory
 

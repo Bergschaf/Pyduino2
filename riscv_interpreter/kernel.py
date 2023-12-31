@@ -167,7 +167,8 @@ class Kernel:
         n = self.registers[17]
         print("syscall: ", n)
         if self.testing:
-            if
+            if n == 0:
+                return True
 
         if n in self.SYSCALL_TABLE:
             ret = self.SYSCALL_TABLE[n](self, a0, a1, a2, a3, a4, a5, n)

@@ -64,10 +64,11 @@ class Registers:
         31: "t6",
     }
 
+    VALUES = {v: k for k, v in NAMES.items()}
+
     def __init__(self):
         self.registers = [0] * 32
         self.pc = 0
-        self.testing = False
 
     def __getitem__(self, item):
         return self.registers[item]
@@ -182,7 +183,7 @@ class Instruction:
         self.func = func
 
     def do(self, kernel):
-        return self.func(self.values,kernel)
+        return self.func(self.values, kernel)
 
     def __repr__(self):
         return str(self.values) + "\n" + self.func.__name__ + "\n\n"
@@ -359,12 +360,12 @@ class Instructions:
 
     @staticmethod
     def sd(inst: IType, kernel):
-        #print(kernel.registers)
+        # print(kernel.registers)
         # print(int_from_bin(kernel.registers[inst.rs1]))
         # print(inst.rs1)
         # print(inst.imm)
         kernel.memory.store_doubleword(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm),
-        kernel.registers[inst.rs2])
+                                       kernel.registers[inst.rs2])
 
     @staticmethod
     def beq(inst: IType, kernel):
@@ -457,7 +458,7 @@ class Instructions:
 
     @staticmethod
     def ecall(inst: IType, kernel):
-        kernel.do_syscalL()
+        return kernel.do_syscalL()
 
     @staticmethod
     def ebreak(inst: IType, kernel):
@@ -589,7 +590,6 @@ class Instructions:
                         return Instruction(inst, Instructions.sw)
                     case 0b011:
                         return Instruction(inst, Instructions.sd)
-
 
             case 0b1100011:
                 # Branch instructions
