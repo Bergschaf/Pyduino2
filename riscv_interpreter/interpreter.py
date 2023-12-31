@@ -1,5 +1,5 @@
 XLEN = 64
-
+from termcolor import colored
 
 def int_from_bin(a: int, word_size=XLEN):
     # twos complement
@@ -66,6 +66,7 @@ class Registers:
         self.registers = [0] * 32
         self.pc = 0
         self.memory = None
+        self.testing = False
 
     def __getitem__(self, item):
         return self.registers[item]
@@ -179,7 +180,7 @@ class Instruction:
         self.func = func
 
     def do(self, registers):
-        self.func(self.values, registers)
+        return self.func(self.values, registers)
 
     def __repr__(self):
         return str(self.values) + "\n" + self.func.__name__ + "\n\n"
@@ -439,10 +440,32 @@ class Instructions:
 
     @staticmethod
     def noop(inst: IType, registers: Registers):
-        print(inst)
-        print(registers)
-        print(registers.memory.load_bytes(81464,1000))
-        exit()
+        if registers.testing:
+            return True
+        if registers[17] == 93:
+            print("Ecall Exit")
+            exit(12)
+        if registers[17] == 66:
+            # sys_writev
+            print(registers)
+            fd = int_from_bin(registers[10])
+            address = int_from_bin(registers[11])
+            count = int_from_bin(registers[12])
+            res = 0
+            for i in range(count):
+                iov_base = int_from_bin(registers.memory.load_word(address + i * 16), 32)
+                iov_len = registers.memory.load_word(address + i * 16 + 8)
+                byt = registers.memory.load_bytes(iov_base, iov_len)
+                print(iov_base,iov_len)
+                print(colored(bytes(byt).decode("utf-8"),"green", force_color=True), end="")
+                res += len(bytes(byt).decode("utf-8"))
+
+            registers[10] = res
+            #-232 vlt string da
+        else:
+            print("Ecall", registers[17])
+            #print(registers)
+        #exit(12)
 
     @staticmethod
     def ebreak(inst: IType, registers: Registers):

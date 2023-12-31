@@ -14,8 +14,10 @@ Aufgabe zu lösen gibt.
 
 Was erwartest Du vom Fit-for-BWINF-Camp des HPI? *
 Ich bin sehr gespannt auf die Teamarbeit mit den anderen Teilnehmern und erhoffe mir davon neben neuen Informatikkenntnissen auch
-interessante Erfahrungen im Team zu sammeln. Zusätzlich dazu wird es sicherlich die Möglichkeit geben, viele Kontakte zu anderen
-Informatikinteressierten zu knüpfen.
+interessante Erfahrungen im Team zu sammeln. Zusätzalich dazu wird es sicherlich die Möglichkeit geben, viele Kontakte zu anderen
+Informatikinteressierten zu knüpfen, aus denen sich vielleicht auch neue Projekte ergeben. Da ich dieses Jahr auch an der zweiten
+Runde des BWINF teilnehmen will, erhoffe ich mir auch, dass ich durch das Camp gut auf die Aufgaben und vor allem die Dokumentation
+(Big O Notation, etc.) vorbereitet werde.
 
 
 Welche Erfahrungen konntest Du bereits in der Informatik sammeln? *

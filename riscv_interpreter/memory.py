@@ -2,12 +2,12 @@ import numpy as np
 
 class Memory:
     def __init__(self, size):
-        self.start_adress = 0
+        self.start_adress = -1000 # TODO nicht so gut
         self.size = size
         self.memory = np.zeros(size, dtype=np.uint8)
 
     def store_bytes(self, address, bytes):
-        print("store: ", address, self.start_adress,bytes)
+        #print("store: ", address, bytes)
         for i, byte in enumerate(bytes):
             self.memory[address + i - self.start_adress] = byte
 
@@ -23,13 +23,14 @@ class Memory:
         self.store_bytes(address, byte.to_bytes(1, byteorder="little"))
 
     def load_bytes(self, address, size):
+        #print("load : ", address, size, self.memory[address - self.start_adress: address - self.start_adress + size])
         return self.memory[address - self.start_adress: address - self.start_adress + size]
 
     def load_word(self, address):
         return int.from_bytes(self.load_bytes(address, 4), byteorder="little")
 
     def load_doubleword(self, address):
-        print("load dw:", address, hex(int.from_bytes(self.load_bytes(address, 8), byteorder="little")))
+        #print("load dw:", address, hex(int.from_bytes(self.load_bytes(address, 8), byteorder="little")))
         return int.from_bytes(self.load_bytes(address, 8), byteorder="little")
 
     def load_halfword(self, address):
