@@ -1,6 +1,7 @@
 XLEN = 64
 from termcolor import colored
 
+
 def int_from_bin(a: int, word_size=XLEN):
     # twos complement
     if a & (1 << (word_size - 1)):
@@ -18,6 +19,7 @@ def int_to_bin(a: int, word_size=XLEN):
 def se(value, bits=XLEN):
     sign_bit = 1 << (bits - 1)
     return (value & (sign_bit - 1)) - (value & sign_bit)
+
 
 def sign_extend(value, curr, bits=XLEN):
     if curr >= bits:
@@ -65,7 +67,6 @@ class Registers:
     def __init__(self):
         self.registers = [0] * 32
         self.pc = 0
-        self.memory = None
         self.testing = False
 
     def __getitem__(self, item):
@@ -78,7 +79,9 @@ class Registers:
         self.registers[key] = value
 
     def __repr__(self):
-        return "\n".join(str(x) + ": " + str(int_from_bin(self[x])) + f" | {hex(self[x])} ({self.NAMES[x]})" for x in range(32) if self[x])
+        return "\n".join(
+            str(x) + ": " + str(int_from_bin(self[x])) + f" | {hex(self[x])} ({self.NAMES[x]})" for x in range(32) if
+            self[x])
 
 
 class InstructionType:
@@ -104,8 +107,7 @@ class InstructionType:
         funct3: {bin(self.funct3) if self.funct3 is not None else None}
         funct7: {bin(self.funct7) if self.funct7 is not None else None}
         """
-        
-        
+
 
 class RType(InstructionType):
     def decode(self):
@@ -179,293 +181,302 @@ class Instruction:
         self.values = values
         self.func = func
 
-    def do(self, registers):
-        return self.func(self.values, registers)
+    def do(self, kernel):
+        return self.func(self.values,kernel)
 
     def __repr__(self):
         return str(self.values) + "\n" + self.func.__name__ + "\n\n"
 
 
-
 class Instructions:
 
     @staticmethod
-    def addi(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] + inst.imm
+    def addi(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] + inst.imm
 
     @staticmethod
-    def slli(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] << inst.imm
+    def slli(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] << inst.imm
 
     @staticmethod
-    def srli(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] >> inst.imm
+    def srli(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] >> inst.imm
 
     @staticmethod
-    def srai(inst: IType, registers: Registers):
+    def srai(inst: IType, kernel):
         sham = inst.imm & 0b11111
-        if registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
+        if kernel.registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
             filler = int('1' * sham + '0' * (XLEN - sham), 2)
-            registers[inst.rd] = (registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
+            kernel.registers[inst.rd] = (kernel.registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
         else:
-            registers[inst.rd] = registers[inst.rs1] >> sham
+            kernel.registers[inst.rd] = kernel.registers[inst.rs1] >> sham
 
     @staticmethod
-    def slti(inst: IType, registers: Registers):
+    def slti(inst: IType, kernel):
         # TODO Test
-        if int_from_bin(registers[inst.rs1]) < inst.imm:
-            registers[inst.rd] = 1
+        if int_from_bin(kernel.registers[inst.rs1]) < inst.imm:
+            kernel.registers[inst.rd] = 1
         else:
-            registers[inst.rd] = 0
+            kernel.registers[inst.rd] = 0
 
     @staticmethod
-    def sltiu(inst: IType, registers: Registers):
-        if registers[inst.rs1] < inst.imm:
-            registers[inst.rd] = 1
+    def sltiu(inst: IType, kernel):
+        if kernel.registers[inst.rs1] < inst.imm:
+            kernel.registers[inst.rd] = 1
         else:
-            registers[inst.rd] = 0
+            kernel.registers[inst.rd] = 0
 
     @staticmethod
-    def andi(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] & inst.imm
+    def andi(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] & inst.imm
 
     @staticmethod
-    def ori(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] | inst.imm
+    def ori(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] | inst.imm
 
     @staticmethod
-    def xori(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] ^ inst.imm
+    def xori(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] ^ inst.imm
 
     @staticmethod
-    def lui(inst: IType, registers: Registers):
-        registers[inst.rd] = sign_extend(inst.imm, 32)
+    def lui(inst: IType, kernel):
+        kernel.registers[inst.rd] = sign_extend(inst.imm, 32)
 
     @staticmethod
-    def auipc(inst: IType, registers: Registers):
-        registers[inst.rd] = int_to_bin(registers.pc + int_from_bin(sign_extend(inst.imm, 32)))
+    def auipc(inst: IType, kernel):
+        kernel.registers[inst.rd] = int_to_bin(kernel.registers.pc + int_from_bin(sign_extend(inst.imm, 32)))
 
     @staticmethod
-    def add(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] + registers[inst.rs2]
+    def add(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] + kernel.registers[inst.rs2]
 
     @staticmethod
-    def sub(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] - registers[inst.rs2]
+    def sub(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] - kernel.registers[inst.rs2]
         # maybe other way round
 
     @staticmethod
-    def slt(inst: IType, registers: Registers):
-        if int_from_bin(registers[inst.rs1]) < int_from_bin(registers[inst.rs2]):
-            registers[inst.rd] = 1
+    def slt(inst: IType, kernel):
+        if int_from_bin(kernel.registers[inst.rs1]) < int_from_bin(kernel.registers[inst.rs2]):
+            kernel.registers[inst.rd] = 1
         else:
-            registers[inst.rd] = 0
+            kernel.registers[inst.rd] = 0
 
     @staticmethod
-    def sltu(inst: IType, registers: Registers):
-        if registers[inst.rs1] < registers[inst.rs2]:
-            registers[inst.rd] = 1
+    def sltu(inst: IType, kernel):
+        if kernel.registers[inst.rs1] < kernel.registers[inst.rs2]:
+            kernel.registers[inst.rd] = 1
         else:
-            registers[inst.rd] = 0
+            kernel.registers[inst.rd] = 0
 
     @staticmethod
-    def _or(inst: IType, registers: Registers):
+    def _or(inst: IType, kernel):
         # underscore weil sonst python mault
-        registers[inst.rd] = registers[inst.rs1] | registers[inst.rs2]
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] | kernel.registers[inst.rs2]
 
     @staticmethod
-    def _and(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] & registers[inst.rs2]
+    def _and(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] & kernel.registers[inst.rs2]
 
     @staticmethod
-    def xor(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] ^ registers[inst.rs2]
+    def xor(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] ^ kernel.registers[inst.rs2]
 
     @staticmethod
-    def sll(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] << (registers[inst.rs2] & 0b111111)
+    def sll(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] << (kernel.registers[inst.rs2] & 0b111111)
 
     @staticmethod
-    def srl(inst: IType, registers: Registers):
-        registers[inst.rd] = registers[inst.rs1] >> (registers[inst.rs2] & 0b111111)
+    def srl(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.registers[inst.rs1] >> (kernel.registers[inst.rs2] & 0b111111)
 
     @staticmethod
-    def sra(inst: IType, registers: Registers):
+    def sra(inst: IType, kernel):
         # https://stackoverflow.com/questions/64963170/how-to-do-arithmetic-right-shift-in-python-for-signed-and-unsigned-values
 
-        sham = registers[inst.rs2] & 0b111111
-        if registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
+        sham = kernel.registers[inst.rs2] & 0b111111
+        if kernel.registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
             filler = int('1' * sham + '0' * (XLEN - sham), 2)
-            registers[inst.rd] = (registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
+            kernel.registers[inst.rd] = (kernel.registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
         else:
-            registers[inst.rd] = registers[inst.rs1] >> sham
+            kernel.registers[inst.rd] = kernel.registers[inst.rs1] >> sham
 
     @staticmethod
-    def jal(inst: IType, registers: Registers):
-        target_adress = int_from_bin(inst.imm) + registers.pc
-        registers[inst.rd] = registers.pc + 4
-        registers.pc = target_adress
+    def jal(inst: IType, kernel):
+        target_adress = int_from_bin(inst.imm) + kernel.registers.pc
+        kernel.registers[inst.rd] = kernel.registers.pc + 4
+        kernel.registers.pc = target_adress
 
     @staticmethod
-    def lw(inst: IType, registers: Registers):
-        registers[inst.rd] = sign_extend(registers.memory.load_word(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm)), 32)
+    def lw(inst: IType, kernel):
+        kernel.registers[inst.rd] = sign_extend(
+            kernel.memory.load_word(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm)), 32)
 
     @staticmethod
-    def lb(inst: IType, registers: Registers):
-        registers[inst.rd] = sign_extend(registers.memory.load_byte(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm)), 8)
+    def lb(inst: IType, kernel):
+        kernel.registers[inst.rd] = sign_extend(
+            kernel.memory.load_byte(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm)), 8)
 
     @staticmethod
-    def lh(inst: IType, registers: Registers):
-        registers[inst.rd] = sign_extend(registers.memory.load_halfword(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm)), 16)
+    def lh(inst: IType, kernel):
+        kernel.registers[inst.rd] = sign_extend(
+            kernel.memory.load_halfword(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm)), 16)
 
     @staticmethod
-    def lbu(inst: IType, registers: Registers):
-        registers[inst.rd] = registers.memory.load_byte(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm))
+    def lbu(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.memory.load_byte(
+            int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm))
 
     @staticmethod
-    def lhu(inst: IType, registers: Registers):
-        registers[inst.rd] = registers.memory.load_halfword(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm))
+    def lhu(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.memory.load_halfword(
+            int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm))
 
     @staticmethod
-    def lwu(inst: IType, registers: Registers):
-        registers[inst.rd] = registers.memory.load_word(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm))
+    def lwu(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.memory.load_word(
+            int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm))
 
     @staticmethod
-    def ld(inst: IType, registers: Registers):
-        registers[inst.rd] = registers.memory.load_doubleword(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm))
+    def ld(inst: IType, kernel):
+        kernel.registers[inst.rd] = kernel.memory.load_doubleword(
+            int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm))
 
     @staticmethod
-    def sb(inst: IType, registers: Registers):
-        registers.memory.store_byte(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm),
-                                    registers[inst.rs2] & 0xff)
+    def sb(inst: IType, kernel):
+        kernel.memory.store_byte(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm),
+                                 kernel.registers[inst.rs2] & 0xff)
 
     @staticmethod
-    def sh(inst: IType, registers: Registers):
-        registers.memory.store_halfword(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm),
-                                        registers[inst.rs2] & 0xffff)
+    def sh(inst: IType, kernel):
+        kernel.memory.store_halfword(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm),
+                                     kernel.registers[inst.rs2] & 0xffff)
 
     @staticmethod
-    def sw(inst: IType, registers: Registers):
-        registers.memory.store_word(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm),
-                                    registers[inst.rs2] & 0xffffffff)
+    def sw(inst: IType, kernel):
+        kernel.memory.store_word(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm),
+                                 kernel.registers[inst.rs2] & 0xffffffff)
 
     @staticmethod
-    def sd(inst: IType, registers: Registers):
-        registers.memory.store_doubleword(int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm),
-                                          registers[inst.rs2])
+    def sd(inst: IType, kernel):
+        kernel.memory.store_doubleword(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm),
+                                       kernel.registers[inst.rs2])
 
     @staticmethod
-    def beq(inst: IType, registers: Registers):
-        if registers[inst.rs1] == registers[inst.rs2]:
-            registers.pc += int_from_bin(inst.imm)
+    def beq(inst: IType, kernel):
+        if kernel.registers[inst.rs1] == kernel.registers[inst.rs2]:
+            kernel.registers.pc += int_from_bin(inst.imm)
 
     @staticmethod
-    def bne(inst: IType, registers: Registers):
-        if registers[inst.rs1] != registers[inst.rs2]:
-            registers.pc += int_from_bin(inst.imm)
+    def bne(inst: IType, kernel):
+        if kernel.registers[inst.rs1] != kernel.registers[inst.rs2]:
+            kernel.registers.pc += int_from_bin(inst.imm)
 
     @staticmethod
-    def blt(inst: IType, registers: Registers):
-        if int_from_bin(registers[inst.rs1]) < int_from_bin(registers[inst.rs2]):
-            registers.pc += int_from_bin(inst.imm)
+    def blt(inst: IType, kernel):
+        if int_from_bin(kernel.registers[inst.rs1]) < int_from_bin(kernel.registers[inst.rs2]):
+            kernel.registers.pc += int_from_bin(inst.imm)
 
     @staticmethod
-    def bltu(inst: IType, registers: Registers):
-        if registers[inst.rs1] < registers[inst.rs2]:
-            registers.pc += int_from_bin(inst.imm)
+    def bltu(inst: IType, kernel):
+        if kernel.registers[inst.rs1] < kernel.registers[inst.rs2]:
+            kernel.registers.pc += int_from_bin(inst.imm)
 
     @staticmethod
-    def bge(inst: IType, registers: Registers):
-        if int_from_bin(registers[inst.rs1]) >= int_from_bin(registers[inst.rs2]):
-            registers.pc += int_from_bin(inst.imm)
+    def bge(inst: IType, kernel):
+        if int_from_bin(kernel.registers[inst.rs1]) >= int_from_bin(kernel.registers[inst.rs2]):
+            kernel.registers.pc += int_from_bin(inst.imm)
 
     @staticmethod
-    def bgeu(inst: IType, registers: Registers):
-        if registers[inst.rs1] >= registers[inst.rs2]:
-            registers.pc += int_from_bin(inst.imm)
+    def bgeu(inst: IType, kernel):
+        if kernel.registers[inst.rs1] >= kernel.registers[inst.rs2]:
+            kernel.registers.pc += int_from_bin(inst.imm)
 
     @staticmethod
-    def addw(inst: IType, registers: Registers):
-        registers[inst.rd] = sign_extend(int_to_bin(int_from_bin(registers[inst.rs1]) + int_from_bin(registers[inst.rs2])) & 0xffffffff, 32)
+    def addw(inst: IType, kernel):
+        kernel.registers[inst.rd] = sign_extend(int_to_bin(
+            int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(kernel.registers[inst.rs2])) & 0xffffffff, 32)
 
     @staticmethod
-    def subw(inst: IType, registers: Registers):
-        registers[inst.rd] = sign_extend(int_to_bin(int_from_bin(registers[inst.rs1]) - int_from_bin(registers[inst.rs2])) & 0xffffffff, 32)
+    def subw(inst: IType, kernel):
+        kernel.registers[inst.rd] = sign_extend(int_to_bin(
+            int_from_bin(kernel.registers[inst.rs1]) - int_from_bin(kernel.registers[inst.rs2])) & 0xffffffff, 32)
 
     @staticmethod
-    def sllw(inst: IType, registers: Registers):
-        registers[inst.rd] = (registers[inst.rs1] << (registers[inst.rs2] & 0b11111))& 0xffffffff
+    def sllw(inst: IType, kernel):
+        kernel.registers[inst.rd] = (kernel.registers[inst.rs1] << (kernel.registers[inst.rs2] & 0b11111)) & 0xffffffff
 
     @staticmethod
-    def srlw(inst: IType, registers: Registers):
-        registers[inst.rd] = (registers[inst.rs1] & 0xffffffff) >> (registers[inst.rs2] & 0b111111)
+    def srlw(inst: IType, kernel):
+        kernel.registers[inst.rd] = (kernel.registers[inst.rs1] & 0xffffffff) >> (kernel.registers[inst.rs2] & 0b111111)
 
     @staticmethod
-    def sraw(inst: IType, registers: Registers):
+    def sraw(inst: IType, kernel):
         # https://stackoverflow.com/questions/64963170/how-to-do-arithmetic-right-shift-in-python-for-signed-and-unsigned-values
 
-        sham = registers[inst.rs2] & 0b111111
-        registers[inst.rs1] &= 0xffffffff
-        if registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
+        sham = kernel.registers[inst.rs2] & 0b111111
+        kernel.registers[inst.rs1] &= 0xffffffff
+        if kernel.registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
             filler = int('1' * sham + '0' * (XLEN - sham), 2)
-            registers[inst.rd] = (registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
+            kernel.registers[inst.rd] = (kernel.registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
         else:
-            registers[inst.rd] = registers[inst.rs1]  >> sham
+            kernel.registers[inst.rd] = kernel.registers[inst.rs1] >> sham
 
     @staticmethod
-    def addiw(inst: IType, registers: Registers):
-        registers[inst.rd] = sign_extend((registers[inst.rs1] & 0xffffffff) + (inst.imm & 0b11111),32)
+    def addiw(inst: IType, kernel):
+        kernel.registers[inst.rd] = sign_extend((kernel.registers[inst.rs1] & 0xffffffff) + (inst.imm & 0b11111), 32)
 
     @staticmethod
-    def slliw(inst: IType, registers: Registers):
-        registers[inst.rd] = sign_extend((registers[inst.rs1] & 0xffffffff) << (inst.imm & 0b11111),32)
+    def slliw(inst: IType, kernel):
+        kernel.registers[inst.rd] = sign_extend((kernel.registers[inst.rs1] & 0xffffffff) << (inst.imm & 0b11111), 32)
 
     @staticmethod
-    def srliw(inst: IType, registers: Registers):
-        registers[inst.rd] = (registers[inst.rs1] & 0xffffffff) >> (inst.imm & 0b11111)
+    def srliw(inst: IType, kernel):
+        kernel.registers[inst.rd] = (kernel.registers[inst.rs1] & 0xffffffff) >> (inst.imm & 0b11111)
 
     @staticmethod
-    def sraiw(inst: IType, registers: Registers):
+    def sraiw(inst: IType, kernel):
         sham = inst.imm & 0b11111
-        registers[inst.rs1] &= 0xffffffff
-        if registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
+        kernel.registers[inst.rs1] &= 0xffffffff
+        if kernel.registers[inst.rs1] & 2 ** (XLEN - 1) != 0:  # MSB is 1, i.e. x is negative
             filler = int('1' * sham + '0' * (XLEN - sham), 2)
-            registers[inst.rd] = (registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
+            kernel.registers[inst.rd] = (kernel.registers[inst.rs1] >> sham) | filler  # fill in 0's with 1's
         else:
-            registers[inst.rd] = registers[inst.rs1] >> sham
+            kernel.registers[inst.rd] = kernel.registers[inst.rs1] >> sham
+
     @staticmethod
-    def jalr(inst: IType, registers: Registers):
-        target_adress = int_from_bin(registers[inst.rs1]) + int_from_bin(inst.imm)
+    def jalr(inst: IType, kernel):
+        target_adress = int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm)
         target_adress = target_adress >> 1 << 1
-        registers[inst.rd] = int_to_bin(registers.pc + 4)
-        registers.pc = target_adress
+        kernel.registers[inst.rd] = int_to_bin(kernel.registers.pc + 4)
+        kernel.registers.pc = target_adress
 
     @staticmethod
-    def ecall(inst: IType, registers: Registers):
-        kernel.
+    def ecall(inst: IType, kernel):
+        kernel.do_syscalL()
 
     @staticmethod
-    def ebreak(inst: IType, registers: Registers):
+    def ebreak(inst: IType, kernel):
         return True
 
     @staticmethod
-    def xxx(inst: IType, registers: Registers):
+    def xxx(inst: IType, kernel):
         pass
 
     @staticmethod
-    def xxx(inst: IType, registers: Registers):
+    def xxx(inst: IType, kernel):
         pass
 
     @staticmethod
-    def xxx(inst: IType, registers: Registers):
+    def xxx(inst: IType, kernel):
         pass
 
     @staticmethod
-    def xxx(inst: IType, registers: Registers):
+    def xxx(inst: IType, kernel):
         pass
 
     @staticmethod
-    def match(inst):
+    def decode(inst, kernel):
         opcode = inst & 0b1111111
         match opcode:
             case 0b0010011:
@@ -641,17 +652,13 @@ class Instructions:
                 # EBreak
                 return Instruction(IType(inst).decode(), Instructions.ebreak)
 
-
             case _:
-                print(f"Opcode: {bin(opcode)}")
+                kernel.exception(f"Unknown opcode: {bin(opcode)}")
 
-                raise Exception("not gud")
-
-        print(f"Opcode: {bin(opcode)}")
-
-        raise Exception("not gud")
+        kernel.exception("Unknown opcode 2")
 
 
+"""
 if __name__ == '__main__':
 
     #   ff650493  | 111111110110 01010 000 010010 010011        	add	s1,a0,10
@@ -659,17 +666,17 @@ if __name__ == '__main__':
     instruction_list = [0x00b50593, 0x00359593, 0x4d25f593, 0x3944d537, 0x4d350513, 0x4dd57593, 0x00a58633, 0x40c586b3,
                         0x01965613, 0x00c69733, 0x00e6a7b3, 0x00072833, 0x00e038b3, 0x00e74733, 0x00060733, 0xfec70713,
                         0x00e6d4b3, 0x40e6d433, 0x40b55393, 0x00d686b3]
-    registers = Registers()
+    kernel.registers = Registers()
     instructions = []
     for i in instruction_list:
         instructions.append(Instructions.match(i))
 
     for i in instructions:
-        i.do(registers)
-    print(registers)
+        i.do(kernel.registers)
+    print(kernel.registers)
 
     # Test oveflow -> sollte passen
-    """addi x11, x10, 11
+    addi x11, x10, 11
     slli x11, x11, 3
     andi x11, x11, 1234
     lui x10, 234573

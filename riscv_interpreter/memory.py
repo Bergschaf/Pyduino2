@@ -6,6 +6,24 @@ class Memory:
         self.size = size
         self.memory = np.zeros(size, dtype=np.uint8)
 
+    def loads(self, address):
+        # terminates at 0
+        string = ""
+        while True:
+            char = self.load_byte(address)
+            if char == 0:
+                break
+            if len(string) > 1000:
+                raise Exception("String too long")
+            string += chr(char)
+            address += 1
+        return string
+
+    def puts(self, address, string):
+        for i, char in enumerate(string):
+            self.store_byte(address + i, ord(char))
+        self.store_byte(address + len(string), 0)
+
     def store_bytes(self, address, bytes):
         #print("store: ", address, bytes)
         for i, byte in enumerate(bytes):

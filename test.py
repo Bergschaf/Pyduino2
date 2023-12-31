@@ -28,3 +28,4 @@ def sign_extend(value, curr, bits=XLEN):
 print(bin(int_to_bin(se(int_from_bin(0b111111111110110110100,21)))))
 print(bin(sign_extend(0b111111111110110110100,21)))
 print(bin(0xffffffff))
+print("/jksdf/sdkljs/".split("/"))

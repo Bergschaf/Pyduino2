@@ -1,6 +1,31 @@
 from interpreter import int_from_bin
 from termcolor import colored
 
+
+class Filesystem:
+    SPECIAL_FILES = {
+        "/proc/sys/kernel/osrelease": "6.6.8-arch1-1",
+    }
+
+    def __init__(self):
+        self.files = self.SPECIAL_FILES
+        self.open_files = {}
+
+    def next_fd(self):
+        if len(self.open_files) == 0:
+            return 1
+        return max(self.open_files.keys()) + 1  # TODO besser machen irgendwann
+
+    def openat(self, dirfd, pathname, flags):
+        if pathname not in self.files:
+            # Handle Creation
+            raise NotImplementedError("File creation not implemented")
+        else:
+            fd = self.next_fd()
+            self.open_files[fd] = pathname
+            return fd
+
+
 class Kernel:
     @staticmethod
     def sys_writev(kernel, a0, a1, a2, *_):
@@ -14,12 +39,51 @@ class Kernel:
             iov_len = kernel.memory.load_word(address + i * 16 + 8)
             byt = kernel.memory.load_bytes(iov_base, iov_len)
             # print(iov_base,iov_len)
-            kernel.log(colored(bytes(byt).decode("utf-8"), "green", force_color=True), end="")
+            kernel.log(colored(bytes(byt).decode("utf-8"), "green", force_color=True), end="", priority=10)
             res += len(bytes(byt).decode("utf-8"))
         return res
 
+    @staticmethod
+    def sys_exit(kernel, a0, *_):
+        kernel.log("Program exited with code ", a0, priority=3)
+        exit(a0)
+
+    @staticmethod
+    def sys_brk(kernel, a0, *_):
+        return -1
+
+    @staticmethod
+    def sys_getuid(kernel, *_):
+        return 0
+
+    @staticmethod
+    def sys_uname(kernel, a0, *_):
+        # sys_uname
+        size = 32
+        fillchar = "a"
+        kernel.memory.puts(int_from_bin(a0), "Linux".ljust(size - 1, fillchar) + "\x00")
+        kernel.memory.puts(int_from_bin(a0) + size * 1, "".ljust(size - 1, fillchar) + "\x00")
+        kernel.memory.puts(int_from_bin(a0) + size * 2, "6.6.8-arch1-1".ljust(size - 1, fillchar) + "\x00")
+        kernel.memory.puts(int_from_bin(a0) + size * 3, "".ljust(size - 1, fillchar) + "\x00")
+        kernel.memory.puts(int_from_bin(a0) + size * 4, "riscv64".ljust(size - 1, fillchar) + "\x00")
+        kernel.memory.puts(int_from_bin(a0) + size * 5, "".ljust(size - 1, fillchar) + "\x00")
+        return -1  # TODO Change
+
+    @staticmethod
+    def sys_openat(kernel, a0, a1, a2, a3, *_):
+        kernel.log("Open file at: ", kernel.memory.loads(int_from_bin(a1)), priority=2)
+        return kernel.filesystem.openat(int_from_bin(a0), kernel.memory.loads(int_from_bin(a1)), int_from_bin(a2))
+
     SYSCALL_TABLE = {
-        64: sys_writev
+        56: sys_openat,
+        66: sys_writev,
+        93: sys_exit,
+        160: sys_uname,
+        174: sys_getuid,
+        175: sys_getuid,
+        176: sys_getuid,
+        177: sys_getuid,
+        214: sys_brk,
     }
 
     def __init__(self, memory, registers, elf, log_level=0):
@@ -27,6 +91,7 @@ class Kernel:
         self.registers = registers
         self.elf = elf
         self.log_level = log_level  # 0: not important, 1: important, 2: very important, 3: critical, 10: stdout
+        self.filesystem = Filesystem()
 
     def log(self, *messages, priority=0, end="\n"):
         # -> higher priority = more important
@@ -42,6 +107,13 @@ class Kernel:
             else:
                 print("".join(str(m) for m in messages))
 
+    def exception(self, cause):
+        self.lov_level = 0
+        self.log("Exception: ", cause, priority=3)
+        self.log("Program Counter: ", hex(self.registers.pc), priority=2)
+        self.log("Registers:\n", self.registers)
+        exit(1)
+
     def do_syscalL(self):
         a0 = self.registers[10]
         a1 = self.registers[11]
@@ -53,6 +125,6 @@ class Kernel:
         if n in self.SYSCALL_TABLE:
             ret = self.SYSCALL_TABLE[n](self, a0, a1, a2, a3, a4, a5, n)
         else:
-            self.log("Unknown syscall ", n, priority=3)
+            self.log("Unknown syscall ", n, priority=2)
             ret = a0
         self.registers[10] = ret
