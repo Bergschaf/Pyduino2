@@ -5,6 +5,7 @@ class Memory:
         self.start_adress = -1000 # TODO nicht so gut
         self.size = size
         self.memory = np.zeros(size, dtype=np.uint8)
+        self.reservations = set()
 
     def loads(self, address):
         # terminates at 0

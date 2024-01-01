@@ -144,7 +144,7 @@ class IType(InstructionType):
 class UType(InstructionType):
     def decode(self):
         self.rd = (self.inst >> 7) & 0b11111
-        self.imm = self.inst & 0xfffff000
+        self.imm = sign_extend(self.inst & 0xfffff000,32)
         return self
 
 
@@ -187,6 +187,134 @@ class Instruction:
 
     def __repr__(self):
         return str(self.values) + "\n" + self.func.__name__ + "\n\n"
+
+class Instructions_A:
+    @staticmethod
+    def amo_swap_d(inst: RType, kernel):
+        print("ammoswap: ", hex(kernel.registers.pc))
+        addr = int_from_bin(kernel.registers[inst.rs1])
+        val = kernel.registers[inst.rs2]
+        kernel.registers[inst.rd] = kernel.memory.load_doubleword(addr)
+        kernel.memory.store_doubleword(addr, val)
+
+    @staticmethod
+    def amo_swap_w(inst: RType, kernel):
+        print("ammoswap: ", hex(kernel.registers.pc))
+        addr = int_from_bin(kernel.registers[inst.rs1])
+        val = kernel.registers[inst.rs2]
+        kernel.registers[inst.rd] = sign_extend(kernel.memory.load_word(addr), 32)
+        kernel.memory.store_word(addr, val)
+        print(val, addr)
+
+    @staticmethod
+    def lr_w(inst: RType, kernel):
+        print("amolr: ", hex(kernel.registers.pc))
+        print(inst.funct7 & 0b11)
+        addr = int_from_bin(kernel.registers[inst.rs1])
+        kernel.registers[inst.rd] = sign_extend(kernel.memory.load_word(addr), 32)
+        kernel.memory.reservations.add(addr)
+
+    @staticmethod
+    def sc_w(inst: RType, kernel):
+        # never fails
+        print("amosc: ", hex(kernel.registers.pc))
+        addr = int_from_bin(kernel.registers[inst.rs1])
+        if addr not in kernel.memory.reservations:
+            print("invalud")
+            exit()
+        kernel.memory.store_word(addr, kernel.registers[inst.rs2])
+        kernel.registers[inst.rd] = 0
+
+
+    @staticmethod
+    def decode(inst):
+        opcode = inst & 0b1111111
+        if opcode != 0b0101111:
+            return False
+        inst = RType(inst).decode()
+        match inst.funct3:
+            case 0b011:
+                # RV64A
+                func5 = inst.funct7 >> 2
+                match func5:
+                    case 0b00010:
+                        # LR.D
+                        return Instruction(inst, Instructions_A.lr_d)
+                    case 0b00011:
+                        # SC.D
+                        return Instruction(inst, Instructions_A.sc_d)
+                    case 0b00001:
+                        # AMOSWAP.D
+                        return Instruction(inst, Instructions_A.amo_swap_d)
+                    case 0b00000:
+                        # AMOADD.D
+                        return Instruction(inst, Instructions_A.amo_add_d)
+                    case 0b00100:
+                        # AMOXOR.D
+                        return Instruction(inst, Instructions_A.amo_xor_d)
+                    case 0b01100:
+                        # AMOAND.D
+                        return Instruction(inst, Instructions_A.amo_and_d)
+                    case 0b01000:
+                        # AMOOR.D
+                        return Instruction(inst, Instructions_A.amo_or_d)
+                    case 0b10000:
+                        # AMOMIN.D
+                        return Instruction(inst, Instructions_A.amo_min_d)
+                    case 0b10100:
+                        # AMOMAX.D
+                        return Instruction(inst, Instructions_A.amo_max_d)
+                    case 0b11000:
+                        # AMOMINU.D
+                        return Instruction(inst, Instructions_A.amo_minu_d)
+                    case 0b11100:
+                        # AMOMAXU.D
+                        return Instruction(inst, Instructions_A.amo_maxu_d)
+                    case _:
+                        raise Exception("Unknown funct5")
+
+
+
+            case 0b010:
+                # RV32A
+                func5 = inst.funct7 >> 2
+                match func5:
+                    case 0b00010:
+                        # LR.W
+                        return Instruction(inst, Instructions_A.lr_w)
+                    case 0b00011:
+                        # SC.W
+                        return Instruction(inst, Instructions_A.sc_w)
+                    case 0b00001:
+                        # AMOSWAP.W
+                        return Instruction(inst, Instructions_A.amo_swap_w)
+                    case 0b00000:
+                        # AMOADD.W
+                        return Instruction(inst, Instructions_A.amo_add_w)
+                    case 0b00100:
+                        # AMOXOR.W
+                        return Instruction(inst, Instructions_A.amo_xor_w)
+                    case 0b01100:
+                        # AMOAND.W
+                        return Instruction(inst, Instructions_A.amo_and_w)
+                    case 0b01000:
+                        # AMOOR.W
+                        return Instruction(inst, Instructions_A.amo_or_w)
+                    case 0b10000:
+                        # AMOMIN.W
+                        return Instruction(inst, Instructions_A.amo_min_w)
+                    case 0b10100:
+                        # AMOMAX.W
+                        return Instruction(inst, Instructions_A.amo_max_w)
+                    case 0b11000:
+                        # AMOMINU.W
+                        return Instruction(inst, Instructions_A.amo_minu_w)
+                    case 0b11100:
+                        # AMOMAXU.W
+                        return Instruction(inst, Instructions_A.amo_maxu_w)
+
+        print(inst)
+        return False
 
 
 class Instructions:
@@ -241,11 +369,11 @@ class Instructions:
 
     @staticmethod
     def lui(inst: IType, kernel):
-        kernel.registers[inst.rd] = sign_extend(inst.imm, 32)
+        kernel.registers[inst.rd] = inst.imm
 
     @staticmethod
     def auipc(inst: IType, kernel):
-        kernel.registers[inst.rd] = int_to_bin(kernel.registers.pc + int_from_bin(sign_extend(inst.imm, 32)))
+        kernel.registers[inst.rd] = int_to_bin(kernel.registers.pc) + inst.imm
 
     @staticmethod
     def add(inst: IType, kernel):
@@ -340,8 +468,11 @@ class Instructions:
 
     @staticmethod
     def ld(inst: IType, kernel):
+        #print("Addr: ",int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm), hex(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm)))
+        #print(kernel.memory.load_bytes(int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm)-20,40))
         kernel.registers[inst.rd] = kernel.memory.load_doubleword(
             int_from_bin(kernel.registers[inst.rs1]) + int_from_bin(inst.imm))
+        kernel.breakpoint()
 
     @staticmethod
     def sb(inst: IType, kernel):
@@ -429,7 +560,7 @@ class Instructions:
 
     @staticmethod
     def addiw(inst: IType, kernel):
-        kernel.registers[inst.rd] = sign_extend((kernel.registers[inst.rs1] & 0xffffffff) + (inst.imm & 0b11111), 32)
+        kernel.registers[inst.rd] = sign_extend((kernel.registers[inst.rs1] & 0xffffffff) + inst.imm, 32)
 
     @staticmethod
     def slliw(inst: IType, kernel):
@@ -465,7 +596,8 @@ class Instructions:
         return True
 
     @staticmethod
-    def xxx(inst: IType, kernel):
+    def fence(inst: IType, kernel):
+        print("fence: ", hex(kernel.registers.pc))
         pass
 
     @staticmethod
@@ -641,7 +773,7 @@ class Instructions:
                     case 0b101:
                         if inst.imm >> 10 == 0:
                             return Instruction(inst, Instructions.srliw)
-                        elif inst.funct7 >> 10 == 1:
+                        elif inst.imm >> 10 == 1:
                             # TODO test
                             return Instruction(inst, Instructions.sraiw)
                         else:
@@ -657,7 +789,15 @@ class Instructions:
                 # EBreak
                 return Instruction(IType(inst).decode(), Instructions.ebreak)
 
+            case 0b0001111:
+                # Fence
+                return Instruction(IType(inst).decode(), Instructions.fence)
+
             case _:
+                a = Instructions_A.decode(inst)
+                if a:
+                    return a
+                kernel.log("Instruction: ", hex(inst), priority=3)
                 kernel.exception(f"Unknown opcode: {bin(opcode)}")
 
         kernel.exception("Unknown opcode 2")

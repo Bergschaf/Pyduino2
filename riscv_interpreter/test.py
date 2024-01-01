@@ -34,16 +34,17 @@ def run_test(instruction_list, expected_dict):
     expected = RegistersExpectedState(**expected_dict)
     expected.compare(registers)
 
+
 def run_test_registers(register_state, instruction_list, expected_dict):
     # instruction_list: list of strings of asm instructions
     # expected_dict: dict of register names and expected values
     registers, memory = run_asm_instruction_list(instruction_list)
     for i in register_state:
-        registers[registers.VALUES[i]] = register_state[i]
+        registers[int(i[1:])] = register_state[i]
     expected_dict = {x: expected_dict[x] for x in expected_dict}  # only for riscv64
     expected = RegistersExpectedState(**expected_dict)
     expected.compare(registers)
-    register_state.compare(registers)
+
 
 def test_run_test_registers():
     run_test_registers({"x1": 1234}, ["addi x1, x0, 1234"], {"x1": 1234})
@@ -102,6 +103,7 @@ def test_load_store_byte():
     run_test(["addi x1, x1, 1235", "addi x2, x0, 100", "sb x1, 0(x2)", "lb x3, 0(x2)"],
              {"x3": int_from_bin(sign_extend(1235 & 0xFF, 8))})
 
+
 def test_load_store_halfword():
     # test zero adress
     run_test(["lui x1, 123455", "addi x1, x1, 1234", "sh x1, 0(x0)", "lh x2, 0(x0)"],
@@ -117,6 +119,7 @@ def test_load_store_halfword():
     run_test(["addi x1, x1, 1235", "addi x2, x0, 100", "sh x1, 0(x2)", "lh x3, 0(x2)"],
              {"x3": int_from_bin(sign_extend(1235 & 0xFFFF, 16))})
 
+
 def test_load_store_doubleword():
     run_test(["lui x1, 123455", "addi x1, x1, 1234", "sd x1, -100(x0)", "ld x2, -100(x0)"],
              {"x2": 1234 + 123455 * 2 ** 12})
@@ -131,6 +134,7 @@ def test_load_store_doubleword():
     run_test(["addi x1, x1, 1235", "addi x2, x0, 100", "sd x1, 0(x2)", "ld x3, 0(x2)"],
              {"x3": 1235})
 
+
 def test_slli():
     run_test(["addi x1, x0, 1234", "slli x2, x1, 2"], {"x2": 1234 << 2})
     run_test(["addi x1, x0, 1234", "slli x2, x1, 0"], {"x2": 1234})
@@ -138,11 +142,13 @@ def test_slli():
     run_test(["addi x1, x0, 1234", "slli x2, x1, 31"], {"x2": 1234 << 31})
     run_test(["addi x1, x0, 1", "slli x2, x1, 63"], {"x2": int_from_bin(1 << 63)})
 
+
 def test_srli():
     run_test(["addi x1, x0, 1234", "srli x2, x1, 2"], {"x2": 1234 >> 2})
     run_test(["addi x1, x0, 1234", "srli x2, x1, 0"], {"x2": 1234})
-    run_test(["addi x1, x0, 1234","slli x2, x1, 32", "srli x2, x2, 32"], {"x2": 1234})
+    run_test(["addi x1, x0, 1234", "slli x2, x1, 32", "srli x2, x2, 32"], {"x2": 1234})
     run_test(["addi x1, x0, 1234", "srli x2, x1, 31"], {"x2": 0})
+
 
 def test_srai():
     run_test(["addi x1, x0, 1234", "srai x2, x1, 2"], {"x2": 1234 >> 2})
@@ -150,10 +156,12 @@ def test_srai():
     run_test(["addi x1, x0, 0b1111", "srai x2, x1, 2"], {"x2": 0b11})
     run_test(["addi x1, x0, 1234", "srai x2, x1, 31"], {"x2": 1234 >> 31})
 
+
 def test_andi():
     run_test(["addi x1, x0, 1234", "andi x2, x1, 0"], {"x2": 0})
     run_test(["addi x1, x0, 0b1110", "andi x2, x1, 0b1111"], {"x2": 0b1110})
     run_test(["addi x1, x0, 0b11111000011", "andi x2, x1, 0b1111111"], {"x2": 0b1000011})
+
 
 def test_ori():
     run_test(["addi x1, x0, 1234", "ori x2, x1, 0"], {"x2": 1234})
@@ -168,11 +176,13 @@ def test_sll():
     run_test(["addi x1, x0, 1234", "addi x2, x0, 31", "sll x3, x1, x2"], {"x3": 1234 << 31})
     run_test(["addi x1, x0, 1", "addi x2, x0, 63", "sll x3, x1, x2"], {"x3": int_from_bin(1 << 63)})
 
+
 def test_srl():
     run_test(["addi x1, x0, 1234", "addi x2, x0, 2", "srl x3, x1, x2"], {"x3": 1234 >> 2})
     run_test(["addi x1, x0, 1234", "addi x2, x0, 0", "srl x3, x1, x2"], {"x3": 1234})
     run_test(["addi x1, x0, 1234", "addi x2, x0, 32", "srl x3, x1, x2"], {"x3": 1234 >> 32})
     run_test(["addi x1, x0, 1234", "addi x2, x0, 31", "srl x3, x1, x2"], {"x3": 0})
+
 
 def test_sra():
     run_test(["addi x1, x0, 1234", "addi x2, x0, 2", "sra x3, x1, x2"], {"x3": 1234 >> 2})
@@ -184,6 +194,16 @@ def test_sra():
     run_test(["addi x1, x0, -1", "addi x2, x0, 0", "sra x3, x1, x2"], {"x3": -1})
 
 
+def test_atomic_load_store():
+    # test zero adress
+    run_test(["addi x1, x1, 1234", "amoswap.w x1, x1, 0(x0)", "lw x2, 0(x0)"], {"x2": 1234})
+    run_test(["addi x1, x1, 1234", "amoswap.w x1, x1, 0(x0)", "addi x1, x1, 1", "lw x2, 0(x0)"], {"x2": 1234})
+
+    # test negative address
+    run_test(["addi x1, x1, 1235", "addi x2, x0, -10", "amoswap.w x1, x1, 0(x2)", "lw x3, 0(x2)"], {"x3": 1235})
+
+    # test positive address
+    run_test(["addi x1, x1, 1235", "addi x2, x0, 100", "sw x1, 0(x2)", "amoswap.w x3, x0, 0(x2)"], {"x3": 1235})
 
 
 if __name__ == '__main__':

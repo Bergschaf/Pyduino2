@@ -4,8 +4,9 @@ from elf_loader import ELF_File
 import termcolor
 from kernel import Kernel
 
-LOG_LEVEL = 0
-BREAKPOINTS = [0x1296c]
+LOG_LEVEL = 2
+BREAKPOINTS = []
+DISABLE_BREAKPOINTS = True
 
 
 def init(file):
@@ -27,7 +28,14 @@ def init(file):
     registers = Registers()
     registers.pc = elf.entry_pos
     kernel = Kernel(memory, registers, elf, log_level=LOG_LEVEL)
+    kernel.disable_breakpoints = DISABLE_BREAKPOINTS
     kernel.log("Memory size: ", memory_size, priority=2)
+
+
+
+    # set the stack pointer
+    kernel.registers[2] = 0
+
     return kernel
 
 
@@ -44,10 +52,7 @@ def run_next(kernel):
         return res
 
     if prev_pc in BREAKPOINTS:
-        print("Breakpoint hit: ", hex(prev_pc))
-        print(kernel.registers)
-        print(kernel.memory.load_bytes(kernel.registers[10],20))
-        input()
+        kernel.breakpoint()
 
 
     if kernel.registers.pc == prev_pc:
@@ -71,14 +76,15 @@ def run_test_file(file):
     kernel = init(file)
     kernel.testing = True
     kernel.log_level = 3
+    kernel.disable_breakpoints = True
     run(kernel)
     return kernel.registers, kernel.memory
 
 
 if __name__ == '__main__':
-    file = "test"
+    file = "firmware.elf"
     kernel = init(file)
-
+    # 0x156cc
     run(kernel)
 
     # 11f88 -> evlt stdout ecall
