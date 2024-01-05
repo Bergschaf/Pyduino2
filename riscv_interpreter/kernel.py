@@ -99,7 +99,7 @@ class Kernel:
         fillchar = "0"
         kernel.memory.puts(int_from_bin(a0), "Linux".ljust(size - 1, fillchar) + "\x00")
         kernel.memory.puts(int_from_bin(a0) + size * 1, "".ljust(size - 1, fillchar) + "\x00")
-        kernel.memory.puts(int_from_bin(a0) + size * 2, "6.6.8".ljust(size - 1, fillchar) + "\x00")
+        kernel.memory.puts(int_from_bin(a0) + size * 2, "1.6.8".ljust(size - 1, fillchar) + "\x00")
         kernel.memory.puts(int_from_bin(a0) + size * 3, "".ljust(size - 1, fillchar) + "\x00")
         kernel.memory.puts(int_from_bin(a0) + size * 4, "riscv64".ljust(size - 1, fillchar) + "\x00")
         kernel.memory.puts(int_from_bin(a0) + size * 5, "".ljust(size - 1, fillchar) + "\x00")
@@ -147,6 +147,14 @@ class Kernel:
         kernel.memory.puts(buf, res)
         return len(res)
 
+    @staticmethod
+    def sys_nanosleep(kernel, a0, a1,*_):
+        import time
+        sleep_amount=kernel.memory.load_doubleword(int_from_bin(a0+8)) / 1000000000
+        kernel.log("Sleeping for ", sleep_amount, " s", priority=2)
+        time.sleep(sleep_amount)
+        return 0
+
     SYSCALL_TABLE = {
         56: sys_openat,
         57: sys_close,
@@ -156,6 +164,7 @@ class Kernel:
         78: sys_readlinkat,
         93: sys_exit,
         96: set_tid_address,
+        101: sys_nanosleep,
         160: sys_uname,
         174: sys_getuid,
         175: sys_getuid,

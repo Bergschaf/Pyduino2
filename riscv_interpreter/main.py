@@ -4,7 +4,7 @@ from elf_loader import ELF_File
 import termcolor
 from kernel import Kernel
 
-LOG_LEVEL = 2
+LOG_LEVEL = 3
 BREAKPOINTS = []
 DISABLE_BREAKPOINTS = True
 
@@ -46,6 +46,8 @@ def run_next(kernel):
                                                                    force_color=True))
     prev_pc = kernel.registers.pc
     instruction = Instructions.decode(inst, kernel)
+    if kernel.registers.pc not in Instructions.CACHE:
+        Instructions.CACHE[kernel.registers.pc] = instruction
     kernel.log(instruction)
     res = instruction.do(kernel)
     if res is not None:
@@ -82,7 +84,7 @@ def run_test_file(file):
 
 
 if __name__ == '__main__':
-    file = "firmware.elf"
+    file = "sl"
     kernel = init(file)
     # 0x156cc
     run(kernel)
