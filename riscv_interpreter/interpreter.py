@@ -345,7 +345,7 @@ class Instructions_A:
 
 
 class Instructions:
-
+    CACHE = {}
     @staticmethod
     def addi(inst: IType, kernel):
         kernel.registers[inst.rd] = kernel.registers[inst.rs1] + inst.imm
@@ -641,6 +641,8 @@ class Instructions:
 
     @staticmethod
     def decode(inst, kernel):
+        if kernel.registers.pc in Instructions.CACHE:
+            return Instructions.CACHE[kernel.registers.pc]
         opcode = inst & 0b1111111
         match opcode:
             case 0b0010011:

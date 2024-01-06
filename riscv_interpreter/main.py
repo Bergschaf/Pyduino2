@@ -46,6 +46,8 @@ def run_next(kernel):
                                                                    force_color=True))
     prev_pc = kernel.registers.pc
     instruction = Instructions.decode(inst, kernel)
+    if kernel.registers.pc not in Instructions.CACHE:
+        Instructions.CACHE[kernel.registers.pc] = instruction
     kernel.log(instruction)
     res = instruction.do(kernel)
     if res is not None:
@@ -82,7 +84,7 @@ def run_test_file(file):
 
 
 if __name__ == '__main__':
-    file = "test_python.o"
+    file = "sl"
     kernel = init(file)
     # 0x156cc
     run(kernel)

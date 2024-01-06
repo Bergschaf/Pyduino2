@@ -164,6 +164,14 @@ class Kernel:
         return 1
 
 
+    @staticmethod
+    def sys_nanosleep(kernel, a0, a1,*_):
+        import time
+        sleep_amount=kernel.memory.load_doubleword(int_from_bin(a0+8)) / 1000000000
+        kernel.log("Sleeping for ", sleep_amount, " s", priority=2)
+        time.sleep(sleep_amount)
+        return 0
+
     SYSCALL_TABLE = {
         56: sys_openat,
         57: sys_close,
@@ -174,6 +182,7 @@ class Kernel:
         93: sys_exit,
         96: set_tid_address,
         113: sys_clock_gettime,
+        101: sys_nanosleep,
         160: sys_uname,
         174: sys_getuid,
         175: sys_getuid,
