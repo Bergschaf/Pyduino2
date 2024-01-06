@@ -4,9 +4,12 @@
 
 #include <stdio.h>
 #include "decoder.c"
+#include "elfLoader.c"
+
 
 int main() {
+    ElfFile *file = load_elf_file("test");
     printf("Hello, World!\n");
-    special_func();
+    print_elf_file(file);
     return 0;
 }
