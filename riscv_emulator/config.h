@@ -7,3 +7,4 @@
 
 #endif //RISCV_EMULATOR_CONFIG_H
 #define XLEN 64
+#define MEM_SIZE 1000000

@@ -4,8 +4,9 @@ CFLAGS=-Wall -Wextra -Werror -pedantic -g
 
 all: main
 
-main: main.c decoder.c util.c instructionType.c elfLoader.c
-	$(CC) $(CFLAGS) -o main main.c
+main: main.c
+	$(CC) $(CFLAGS) -o main main.c cpu.c util.c elfLoader.c
+
 
 clean:
 	rm -f main

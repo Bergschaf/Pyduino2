@@ -2,9 +2,8 @@
 // Created by bergschaf on 1/5/24.
 //
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
-#include "util.c"
+#include "util.h"
 
 struct ProgramHeader {
     int type; // 1 for loadable segment
@@ -128,6 +127,7 @@ void load_sectionHeader(uint8_t *data, SectionHeader *sectionHeader) {
 
 struct ElfFile {
     char *filename;
+    uint8_t *data;
     int arch; // 32 or 64
     int endianness; // 0 for little, 1 for big
     int type; // 1 for relocatable, 2 for executable, 3 for shared, 4 for core
@@ -155,9 +155,16 @@ void load_elf_file(char *filename, ElfFile *elfFile) {
     }
     elfFile->filename = filename;
 
+    // Load data
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    printf("Size: %ld\n", size);
+    elfFile->data = malloc(size);
+    fread(elfFile->data, 1, size, file);
+
     // Read header
-    uint8_t *header = malloc(64);
-    fread(header, 1, 64, file);
+    uint8_t *header = elfFile->data;
 
     // Check magic number
     // TODO
@@ -224,13 +231,13 @@ void load_elf_file(char *filename, ElfFile *elfFile) {
     elfFile->programHeaders = malloc(sizeof(ProgramHeader) * elfFile->programHeader_num);
 
     for (int i = 0; i < elfFile->programHeader_num; i++) {
-        uint8_t *programHeaderData = malloc(56);
-        fread(programHeaderData, 1, 56, file);
+        uint8_t *programHeaderData = elfFile->data + elfFile->programHeader_offset + i * elfFile->programHeader_size;
         ProgramHeader *programHeader = malloc(sizeof(ProgramHeader));
         load_programmHeader(programHeaderData, programHeader);
         elfFile->programHeaders[i] = *programHeader;
     }
 
+    /*
     elfFile->sectionHeaders = malloc(sizeof(SectionHeader) * elfFile->sectionHeader_num);
     // Read section header table
     for (int i = 0; i < elfFile->sectionHeader_num; i++) {
@@ -239,7 +246,7 @@ void load_elf_file(char *filename, ElfFile *elfFile) {
         SectionHeader *sectionHeader = malloc(sizeof(SectionHeader));
         load_sectionHeader(sectionHeaderData, sectionHeader);
         elfFile->sectionHeaders[i] = *sectionHeader;
-    }
+    }*/
 }
 
 void print_programHeader(ProgramHeader *programHeader) {
@@ -270,7 +277,7 @@ void print_sectionHeader(SectionHeader *sectionHeader) {
 }
 
 void print_elf_file(ElfFile *elfFile) {
-    printf("ElfFile:\n filename: %s\n arch: %d\n endianness: %d\n type: %d\n instructionSet: %d\n entry_pos: %ld\n programHeader_offset: %ld\n sectionHeader_offset: %ld\n header_size: %d\n programHeader_size: %d\n programHeader_num: %d\n sectionHeader_size: %d\n sectionHeader_num: %d\n",
+    printf("ElfFile:\n filename: %s\n arch: %d\n endianness: %d\n type: %d\n instructionSet: %d\n entry_pos: %lx\n programHeader_offset: %ld\n sectionHeader_offset: %ld\n header_size: %d\n programHeader_size: %d\n programHeader_num: %d\n sectionHeader_size: %d\n sectionHeader_num: %d\n",
            elfFile->filename,
            elfFile->arch,
            elfFile->endianness,
@@ -288,9 +295,9 @@ void print_elf_file(ElfFile *elfFile) {
         print_programHeader(&elfFile->programHeaders[i]);
     }
 
-    for (int i = 0; i < elfFile->sectionHeader_num; ++i) {
-        print_sectionHeader(&elfFile->sectionHeaders[i]);
-    }
+    //for (int i = 0; i < elfFile->sectionHeader_num; ++i) {
+    //    print_sectionHeader(&elfFile->sectionHeaders[i]);
+    //}
 }
 
 
