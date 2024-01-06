@@ -10,15 +10,7 @@ Motivation - Was hat Dich zur Teilnahme am Bundeswettbewerb für Informatik moti
 - Darauffolgende Jahre auch immer an der ersten Runde teilgenommen
 - dieses Jahr konnte ich freund aus dem sft gewinnen, auch teilzunehmen -> gemeinsam im Team in die zweite Runde gekommen
 
-Vor drei Jahren wurde mir von einem Lehrer am Schülerforschungszentrum (SFZ) von einem Lehrer der Jugendwettbewerb Informatik vorgeschlagen.
-Da ich mich zu diesem Zeitpunkt schon für Informatik interessierte, nahm ich damit an meinem damals ersten Informatikwettbewerb teil und war auch
-in der Lage, die Aufgaben der dritten Runde in Python zu lösen. Da mich diese Aufgaben sehr faszinierten, löste ich selben Jahr auch die Aufgaben der
-ersten Runde des BWINF. Daraufhin hatte ich die Möglichkeit, am Jugendforum Informatik teilzunehmen, bei dem es neben
-vielen interessanten Vorträgen auch die Möglichkeit gab, bei mehreren Projekt-Workshops teilzunehmen. Insgesamt blieb mir das Jugendforum Informatik
-sehr positiv in Erinnerung, da ich dort auch viele andere informatikinteressierte kennenlernen konnte In den darauffolgenden Jahren habe ich auch an der
-ersten Runde des BWINF teilgenommen, letztes Jahr konnte ich aber leider nicht am Jugendforum Informatik teilnehmen, obwohl ich mich für
-die zweite Runde qualifiziert hatte, da es zu wenig Plätze gab. Dafür konnte ich dieses Jahr sogar einen Freund aus dem SFZ dafür gewinnen, auch
-am BWINF teilzunehmen. Zu zweit die Aufgaben zu lösen hat uns viel Spaß gemacht, wir werden nächstes Jahr auf jeden Fall wieder dabei sein.
+Vor drei Jahren wurde mir am Schülerforschungszentrum (SFZ) von einem Lehrer der Jugendwettbewerb Informatik vorgeschlagen. Da ich mich zu diesem Zeitpunkt schon für Informatik interessierte, nahm ich damit an meinem damals ersten Informatikwettbewerb teil und war auch in der Lage, die Aufgaben der dritten Runde in Python zu lösen. Da mich diese Aufgaben sehr faszinierten, löste ich im selben Jahr auch die Aufgaben der ersten Runde des BWINF. Daraufhin hatte ich die Möglichkeit, am Jugendforum Informatik (Baden-Württemberg) teilzunehmen, bei dem es neben vielen interessanten Vorträgen auch die Möglichkeit gab, bei mehreren Workshops spannende Projekte umzusetzen. Insgesamt blieb mir das Jugendforum Informatik sehr positiv in Erinnerung, da ich dort auch viele andere Informatikinteressierte kennenlernen konnte. In den darauffolgenden Jahren habe ich auch an der ersten Runde des BWINF teilgenommen. Letztes Jahr konnte ich leider nicht am Jugendforum Informatik teilnehmen, obwohl ich mich für die zweite Runde qualifiziert hatte, da es zu wenig Plätze gab. Dafür konnte ich dieses Jahr sogar einen Freund aus dem SFZ dafür gewinnen, auch am BWINF teilzunehmen. Zu Zweit die Aufgaben zu lösen, hat uns viel Spaß gemacht - wir werden nächstes Jahr auf jeden Fall wieder dabei sein.
 
 
 Vor drei Jahren habe ich beim Jugendwettbewerb Informatik das erste Mal an einem Informatikwettbwerb teilgenommen
@@ -31,12 +23,7 @@ für mich am Ende der Sommerferien, genau wie der Advent of Code, bei dem es an 
 Aufgabe zu lösen gibt.
 
 Was erwartest Du vom Fit-for-BWINF-Camp des HPI? *
-Als ich dieses Jahr das erste mal im Team am BWINF teilgenommen habe, habe ich gemerkt, dass es nochmal eine ganz andere Erfahrung
-ist, Informatikprobleme im Team zu lösen. Deshalb freue ich mich sehr auf das Fit-for-BWINF-Camp, da ich dort die Möglichkeit
-haben werde, viele andere Informatikinteressierte kennenzulernen und mit ihnen zusammen ein Projekt zu bearbeiten. Ich bin mir sicher,
-das sich daraus interessante Kontakte und Freundschaften ergeben werden. Da ich dieses Jahr auch an der zweiten Runde des BWINF
-teilnehmen will, erhoffe ich mir auch, dass ich durch das Camp auf die Aufgaben und auf die Dokumentation in der zweiten Runde gut
-vorbereitet werde.
+Als ich dieses Jahr die Aufgaben des BWINF das erste Mal im Team bearbeitete, habe ich gemerkt, dass es nochmal eine ganz andere Erfahrung ist, Informatikprobleme gemeinsam mit Anderen zu lösen. Deshalb freue ich mich sehr auf das Fit-for-BWINF-Camp, da es dort hoffentlich die Möglichkeit geben wird, viele andere Informatikinteressierte kennenzulernen und mit ihnen zusammen ein Projekt zu bearbeiten. Ich bin mir sicher, das sich daraus interessante Kontakte und Freundschaften ergeben können. Da ich dieses Jahr vorhabe, auch an der zweiten Runde des BWINF teilzunehmen, erhoffe ich mir auch, dass ich durch das Camp auf die Aufgaben und auf die Dokumentation in der zweiten Runde gut vorbereitet werde.
 
 Ich bin sehr gespannt auf die Teamarbeit mit den anderen Teilnehmern und erhoffe mir davon neben neuen Informatikkenntnissen auch
 interessante Erfahrungen im Team zu sammeln. Zusätzalich dazu wird es sicherlich die Möglichkeit geben, viele Kontakte zu anderen

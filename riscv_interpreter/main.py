@@ -17,7 +17,7 @@ def init(file):
     # load the Segments specified in the program headers
     memory_size = 100000000  # last segment's virtual address + size
     memory = Memory(memory_size)
-    memory.start_adress = 100000
+    memory.start_adress = -10000
 
     with open(file, "rb") as f:
         f = f.read()
@@ -82,7 +82,7 @@ def run_test_file(file):
 
 
 if __name__ == '__main__':
-    file = "firmware.elf"
+    file = "test_python.o"
     kernel = init(file)
     # 0x156cc
     run(kernel)

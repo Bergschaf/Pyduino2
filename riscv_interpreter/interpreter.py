@@ -215,6 +215,14 @@ class Instructions_A:
         kernel.memory.reservations.add(addr)
 
     @staticmethod
+    def lr_d(inst: RType, kernel):
+        print("amolr: ", hex(kernel.registers.pc))
+        print(inst.funct7 & 0b11)
+        addr = int_from_bin(kernel.registers[inst.rs1])
+        kernel.registers[inst.rd] = kernel.memory.load_doubleword(addr)
+        kernel.memory.reservations.add(addr)
+
+    @staticmethod
     def sc_w(inst: RType, kernel):
         # never fails
         print("amosc: ", hex(kernel.registers.pc))
@@ -224,6 +232,25 @@ class Instructions_A:
             exit()
         kernel.memory.store_word(addr, kernel.registers[inst.rs2])
         kernel.registers[inst.rd] = 0
+
+    @staticmethod
+    def sc_d(inst: RType, kernel):
+        # never fails
+        print("amosc: ", hex(kernel.registers.pc))
+        addr = int_from_bin(kernel.registers[inst.rs1])
+        if addr not in kernel.memory.reservations:
+            print("invalud")
+            exit()
+        kernel.memory.store_doubleword(addr, kernel.registers[inst.rs2])
+        kernel.registers[inst.rd] = 0
+
+    @staticmethod
+    def amo_add_d(inst: RType, kernel):
+        kernel.registers[inst.rd] = kernel.memory.load_doubleword(int_from_bin(inst.rs1))
+        kernel.memory.store_doubleword(int_from_bin(inst.rs1), kernel.registers[inst.rs2] + kernel.registers[inst.rd])
+
+
+
 
 
     @staticmethod

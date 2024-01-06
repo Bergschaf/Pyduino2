@@ -5,6 +5,7 @@ from termcolor import colored
 class Filesystem:
     SPECIAL_FILES = {
         "/proc/sys/kernel/osrelease": "6.6.8",
+        "/proc/sys/vm/overcommit_memory": "0",
     }
     SYMBOLIC_LINKS = {
         "/proc/self/exe": "/bin/riscv"
@@ -22,6 +23,7 @@ class Filesystem:
     def openat(self, dirfd, pathname, flags):
         if pathname not in self.files:
             # Handle Creation
+            print("File not found: ", pathname)
             raise NotImplementedError("File creation not implemented")
         else:
             fd = self.next_fd()
@@ -86,7 +88,7 @@ class Kernel:
 
     @staticmethod
     def sys_brk(kernel, a0, *_):
-        return -1
+        return 0
 
     @staticmethod
     def sys_getuid(kernel, *_):
@@ -133,7 +135,15 @@ class Kernel:
 
     @staticmethod
     def sys_mmap(kernel, addr, length, prot, flags, fd, offset, *_):
-        print("mmap:", addr, length, prot, flags, fd, offset)
+        print("mmap:", addr, length, prot, flags, int_from_bin(fd), offset)
+
+        if int_from_bin(fd) == -1:
+            if addr != 0:
+                raise NotImplementedError("mmap with addr not implemented")
+            return kernel.memory.mmap_anonymous(int_from_bin(length))
+
+        else:
+            raise NotImplementedError("mmap with file not implemented")
         return 0
 
     @staticmethod
@@ -147,6 +157,13 @@ class Kernel:
         kernel.memory.puts(buf, res)
         return len(res)
 
+    @staticmethod
+    def sys_clock_gettime(kernel, clk_id, tp, *_):
+        print("clock_gettime:", clk_id, tp)
+        kernel.memory.store_doubleword(int_from_bin(tp), 100)
+        return 1
+
+
     SYSCALL_TABLE = {
         56: sys_openat,
         57: sys_close,
@@ -156,6 +173,7 @@ class Kernel:
         78: sys_readlinkat,
         93: sys_exit,
         96: set_tid_address,
+        113: sys_clock_gettime,
         160: sys_uname,
         174: sys_getuid,
         175: sys_getuid,
@@ -217,6 +235,6 @@ class Kernel:
             ret = self.SYSCALL_TABLE[n](self, a0, a1, a2, a3, a4, a5, n)
             self.log(f"Syscall {n} | {self.SYSCALL_TABLE[n].__name__}", priority=2)
         else:
-            self.log("Unknown syscall ", n, a0, a1, a2, a3, priority=2)
+            self.log(f"Unknown syscall {int_from_bin(n)}: ", a0, a1, a2, a3, priority=2)
             ret = -1
         self.registers[10] = ret
