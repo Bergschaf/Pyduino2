@@ -1,11 +1,9 @@
 //
 // Created by bergschaf on 1/5/24.
 //
-#include <stdint.h>
-#include "config.h"
-#include "instructionType.c"
+#include "decoder.h"
 
-int decode(uint64_t inst){
+ decode(uint64_t inst){
     int opcode = inst & 0b1111111;
 
     switch (opcode) {

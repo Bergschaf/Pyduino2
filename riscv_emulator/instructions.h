@@ -1,0 +1,8 @@
+//
+// Created by bergschaf on 1/6/24.
+//
+
+#ifndef RISCV_EMULATOR_INSTRUCTIONS_H
+#define RISCV_EMULATOR_INSTRUCTIONS_H
+
+#endif //RISCV_EMULATOR_INSTRUCTIONS_H

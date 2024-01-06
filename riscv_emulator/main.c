@@ -8,7 +8,6 @@
 
 int main() {
     Cpu cpu;
-    load_elf_executable("test.elf", &cpu);
-    printf("pc: %lx\n", cpu.pc);
+    load_elf_executable("test", &cpu);
     return 43;
 }

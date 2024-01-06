@@ -18,6 +18,8 @@ struct cpu {
 typedef struct cpu Cpu;
 
 void load_elf_executable(char *filename, Cpu *cpu);
+
+uint64_t get_next_inst(Cpu *cpu);
 #endif //RISCV_EMULATOR_CPU_H
 
 
