@@ -3,14 +3,12 @@
 //
 
 #include <stdio.h>
-#include "decoder.c"
-#include "util.h"
 #include "cpu.h"
 
 
 int main() {
     Cpu cpu;
     load_elf_executable("test.elf", &cpu);
-
-
+    printf("pc: %lx\n", cpu.pc);
+    return 43;
 }

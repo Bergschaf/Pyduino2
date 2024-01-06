@@ -4,12 +4,11 @@
 
 #ifndef RISCV_EMULATOR_CPU_H
 #define RISCV_EMULATOR_CPU_H
-
-#endif //RISCV_EMULATOR_CPU_H
-
 #include "config.h"
 #include "util.h"
-#include "elfLoader.c"
+#include <stdlib.h>
+#include "config.h"
+#include "elfLoader.h"
 
 struct cpu {
     uint64_t pc;
@@ -19,3 +18,6 @@ struct cpu {
 typedef struct cpu Cpu;
 
 void load_elf_executable(char *filename, Cpu *cpu);
+#endif //RISCV_EMULATOR_CPU_H
+
+
