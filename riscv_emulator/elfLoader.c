@@ -9,7 +9,7 @@
 struct ProgramHeader {
     int type; // 1 for loadable segment
     int flags; // 1 for executable, 2 for writable, 4 for readable
-    uint64_t offset; // offset of segment in file image
+    int64_t offset; // offset of segment in file image
     int64_t vaddr; // virtual address of segment in memory
     int64_t paddr; // physical address of segment in memory
     int64_t fileSize; // size of segment in file image
@@ -18,7 +18,7 @@ struct ProgramHeader {
 };
 typedef struct ProgramHeader ProgramHeader;
 
-void load_programmHeader(char *data, ProgramHeader *programHeader) {
+void load_programmHeader(uint8_t *data, ProgramHeader *programHeader) {
     // Size: 56 bytes
 
     // Check type
@@ -29,32 +29,32 @@ void load_programmHeader(char *data, ProgramHeader *programHeader) {
 
     // Check offset (64 bit)
     programHeader->offset =
-            (int64_t) data[15] << 56 | (int64_t) data[14] << 48 | (int64_t) data[13] << 40 | (int64_t) data[12] << 32 |
+            (uint64_t) data[15] << 56 | (uint64_t) data[14] << 48 | (uint64_t) data[13] << 40 | (uint64_t) data[12] << 32 |
             data[11] << 24 | data[10] << 16 | data[9] << 8 | data[8];
 
     // Check virtual address (64 bit)
     programHeader->vaddr =
-            (int64_t) data[23] << 56 | (int64_t) data[22] << 48 | (int64_t) data[21] << 40 | (int64_t) data[20] << 32 |
+            (uint64_t) data[23] << 56 | (uint64_t) data[22] << 48 | (uint64_t) data[21] << 40 | (uint64_t) data[20] << 32 |
             data[19] << 24 | data[18] << 16 | data[17] << 8 | data[16];
 
     // Check physical address (64 bit)
     programHeader->paddr =
-            (int64_t) data[31] << 56 | (int64_t) data[30] << 48 | (int64_t) data[29] << 40 | (int64_t) data[28] << 32 |
+            (uint64_t) data[31] << 56 | (uint64_t) data[30] << 48 | (uint64_t) data[29] << 40 | (uint64_t) data[28] << 32 |
             data[27] << 24 | data[26] << 16 | data[25] << 8 | data[24];
 
     // Check file size (64 bit)
     programHeader->fileSize =
-            (int64_t) data[39] << 56 | (int64_t) data[38] << 48 | (int64_t) data[37] << 40 | (int64_t) data[36] << 32 |
+            (uint64_t) data[39] << 56 | (uint64_t) data[38] << 48 | (uint64_t) data[37] << 40 | (uint64_t) data[36] << 32 |
             data[35] << 24 | data[34] << 16 | data[33] << 8 | data[32];
 
     // Check memory size (64 bit)
     programHeader->memSize =
-            (int64_t) data[47] << 56 | (int64_t) data[46] << 48 | (int64_t) data[45] << 40 | (int64_t) data[44] << 32 |
+            (uint64_t) data[47] << 56 | (uint64_t) data[46] << 48 | (uint64_t) data[45] << 40 | (uint64_t) data[44] << 32 |
             data[43] << 24 | data[42] << 16 | data[41] << 8 | data[40];
 
     // Check align (64 bit)
     programHeader->align =
-            (int64_t) data[55] << 56 | (int64_t) data[54] << 48 | (int64_t) data[53] << 40 | (int64_t) data[52] << 32 |
+            (uint64_t) data[55] << 56 | (uint64_t) data[54] << 48 | (uint64_t) data[53] << 40 | (uint64_t) data[52] << 32 |
             data[51] << 24 | data[50] << 16 | data[49] << 8 | data[48];
 
 }
@@ -74,9 +74,9 @@ struct SectionHeader {
 };
 typedef struct SectionHeader SectionHeader;
 
-void load_sectionHeader(char *data, SectionHeader *sectionHeader) {
+void load_sectionHeader(uint8_t *data, SectionHeader *sectionHeader) {
     // Size: 64 bytes
-
+    exit(69); // TODO falsch
     // Check name
     sectionHeader->name = data[3] << 24 | data[2] << 16 | data[1] << 8 | data[0];
 
@@ -147,8 +147,7 @@ struct ElfFile {
 
 typedef struct ElfFile ElfFile;
 
-ElfFile *load_elf_file(char *filename) {
-    ElfFile *elfFile = malloc(sizeof(ElfFile));
+void load_elf_file(char *filename, ElfFile *elfFile) {
     FILE *file = fopen(filename, "rb");
     if (file == NULL) {
         printf("Error opening file\n");
@@ -204,42 +203,47 @@ ElfFile *load_elf_file(char *filename) {
             (int64_t) header[44] << 32 | header[43] << 24 | header[42] << 16 | header[41] << 8 | header[40];
 
     // Check header size (52 to 55)
-    elfFile->header_size = header[55] << 8 | header[54];
+    elfFile->header_size = header[53] << 8 | header[52];
 
     // Check program header entry size (16 bit)
-    elfFile->programHeader_size = header[57] << 8 | header[56];
+    elfFile->programHeader_size = header[55] << 8 | header[54];
 
-    // Check program header number (16 bit)
-    elfFile->programHeader_num = header[59] << 8 | header[58];
+    // Check number of program header entries (16 bit)
+    elfFile->programHeader_num = header[57] << 8 | header[56];
 
     // Check section header entry size (16 bit)
-    elfFile->sectionHeader_size = header[61] << 8 | header[60];
+    elfFile->sectionHeader_size = header[59] << 8 | header[58];
 
-    // Check section header number (16 bit)
-    elfFile->sectionHeader_num = header[63] << 8 | header[62];
+    // Check number of section header entries (16 bit)
+    elfFile->sectionHeader_num = header[61] << 8 | header[60];
+
+    // Free the memory of the header
+    free(header);
 
     // Read program header table
+    elfFile->programHeaders = malloc(sizeof(ProgramHeader) * elfFile->programHeader_num);
+
     for (int i = 0; i < elfFile->programHeader_num; i++) {
-        char *programHeaderData = malloc(56);
+        uint8_t *programHeaderData = malloc(56);
         fread(programHeaderData, 1, 56, file);
         ProgramHeader *programHeader = malloc(sizeof(ProgramHeader));
         load_programmHeader(programHeaderData, programHeader);
         elfFile->programHeaders[i] = *programHeader;
     }
 
+    elfFile->sectionHeaders = malloc(sizeof(SectionHeader) * elfFile->sectionHeader_num);
     // Read section header table
     for (int i = 0; i < elfFile->sectionHeader_num; i++) {
-        char *sectionHeaderData = malloc(64);
+        uint8_t *sectionHeaderData = malloc(64);
         fread(sectionHeaderData, 1, 64, file);
         SectionHeader *sectionHeader = malloc(sizeof(SectionHeader));
         load_sectionHeader(sectionHeaderData, sectionHeader);
         elfFile->sectionHeaders[i] = *sectionHeader;
     }
-    return elfFile;
 }
 
 void print_programHeader(ProgramHeader *programHeader) {
-    printf("ProgramHeader:\n type: %d\n flags: %d\n offset: %ld\n vaddr: %ld\n paddr: %ld\n fileSize: %ld\n memSize: %ld\n align: %ld\n",
+    printf("ProgramHeader:\n type: %x\n flags: %x\n offset: %lx\n vaddr: %lx\n paddr: %lx\n fileSize: %lx\n memSize: %lx\n align: %lx\n",
            programHeader->type,
            programHeader->flags,
            programHeader->offset,
@@ -252,7 +256,7 @@ void print_programHeader(ProgramHeader *programHeader) {
 }
 
 void print_sectionHeader(SectionHeader *sectionHeader) {
-    printf("SectionHeader:\n name: %d\n type: %d\n flags: %d\n addr: %d\n offset: %d\n size: %d\n link: %d\n info: %d\n align: %d\n entrySize: %d\n",
+    printf("SectionHeader:\n name: %x\n type: %x\n flags: %lx\n addr: %lx\n offset: %lx\n size: %lx\n link: %x\n info: %x\n align: %lx\n entrySize: %lx\n",
            sectionHeader->name,
            sectionHeader->type,
            sectionHeader->flags,
