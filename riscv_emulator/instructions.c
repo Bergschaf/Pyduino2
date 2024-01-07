@@ -4,12 +4,69 @@
 
 #include "instructions.h"
 
-Instruction decode_UType(int64_t bin_inst){
+Instruction decode_UType(uint32_t bin_inst){
     struct Instruction *utype = malloc(sizeof(Instruction));
     utype->rd = (bin_inst >> 7) & 0b11111;
     utype->imm = bin_inst >> 12;
     return *utype;
 }
+
+Instruction decode_JType(uint32_t bin_inst){
+    struct Instruction *jtype = malloc(sizeof(Instruction));
+    jtype->rd = (bin_inst >> 7) & 0b11111;
+    int imm = (bin_inst >> 12) & 0b11111111111111111111;
+    int imm_20 = (imm >> 19) & 0b1;
+    int imm_10_1 = (imm >> 9) & 0b1111111111;
+    int imm_11 = (imm >> 8) & 0b1;
+    int imm_19_12 = imm & 0b11111111;
+    jtype->imm = (imm_20 << 20) | (imm_10_1 << 1) | (imm_11 << 11) | (imm_19_12 << 12);
+    return *jtype;
+}
+
+Instruction decode_IType(uint32_t bin_inst){
+    struct Instruction *itype = malloc(sizeof(Instruction));
+    itype->rd = (bin_inst >> 7) & 0b11111;
+    itype->funct3 = (bin_inst >> 12) & 0b111;
+    itype->rs1 = (bin_inst >> 15) & 0b11111;
+    itype->imm = (bin_inst >> 20);
+    return *itype;
+}
+
+Instruction decode_SType(uint32_t bin_inst){
+    struct Instruction *stype = malloc(sizeof(Instruction));
+    stype->funct3 = (bin_inst >> 12) & 0b111;
+    stype->rs1 = (bin_inst >> 15) & 0b11111;
+    stype->rs2 = (bin_inst >> 20) & 0b11111;
+    int imm = (bin_inst >> 7) & 0b1111111;
+    int imm_11_5 = (imm >> 5) & 0b1111111;
+    int imm_4_0 = imm & 0b11111;
+    stype->imm = (imm_11_5 << 5) | imm_4_0;
+    return *stype;
+}
+
+Instruction decode_BType(uint32_t bin_inst){
+    struct Instruction *btype = malloc(sizeof(Instruction));
+    btype->funct3 = (bin_inst >> 12) & 0b111;
+    btype->rs1 = (bin_inst >> 15) & 0b11111;
+    btype->rs2 = (bin_inst >> 20) & 0b11111;
+    int imm = (bin_inst >> 7) & 0b1111111;
+    int imm_12 = (imm >> 6) & 0b1;
+    int imm_10_5 = (imm >> 5) & 0b111111;
+    int imm_4_1 = (imm >> 1) & 0b1111;
+    btype->imm = (imm_12 << 12) | (imm_10_5 << 5) | (imm_4_1 << 1);
+    return *btype;
+}
+
+Instruction decode_RType(uint32_t bin_inst){
+    struct Instruction *rtype = malloc(sizeof(Instruction));
+    rtype->rd = (bin_inst >> 7) & 0b11111;
+    rtype->funct3 = (bin_inst >> 12) & 0b111;
+    rtype->rs1 = (bin_inst >> 15) & 0b11111;
+    rtype->rs2 = (bin_inst >> 20) & 0b11111;
+    rtype->funct7 = (bin_inst >> 25) & 0b1111111;
+    return *rtype;
+}
+
 
 void print_UType(Instruction utype){
     printf("UType:\n rd: %b\n imm: %lb\n", utype.rd, utype.imm);

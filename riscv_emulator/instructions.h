@@ -21,7 +21,18 @@ struct Instruction {
 };
 typedef struct Instruction Instruction;
 
-Instruction decode_UType(int64_t bin_inst);
+Instruction decode_UType(uint32_t bin_inst);
+
+Instruction decode_JType(uint32_t bin_inst);
+
+Instruction decode_IType(uint32_t bin_inst);
+
+Instruction decode_SType(uint32_t bin_inst);
+
+Instruction decode_BType(uint32_t bin_inst);
+
+Instruction decode_RType(uint32_t bin_inst);
+
 
 void print_Instruction(Instruction inst);
 
