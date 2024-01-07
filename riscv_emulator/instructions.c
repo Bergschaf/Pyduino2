@@ -15,7 +15,7 @@ Instruction decode_UType(uint32_t bin_inst){
     struct Instruction *utype = malloc(sizeof(Instruction));
     utype->type = 4;
     utype->rd = (bin_inst >> 7) & 0b11111;
-    utype->imm = bin_inst >> 12;
+    utype->imm = sign_extend(bin_inst >> 12, 20);
     return *utype;
 }
 
@@ -28,7 +28,7 @@ Instruction decode_JType(uint32_t bin_inst){
     int imm_10_1 = (imm >> 9) & 0b1111111111;
     int imm_11 = (imm >> 8) & 0b1;
     int imm_19_12 = imm & 0b11111111;
-    jtype->imm = (imm_20 << 20) | (imm_10_1 << 1) | (imm_11 << 11) | (imm_19_12 << 12);
+    jtype->imm = sign_extend((imm_20 << 20) | (imm_10_1 << 1) | (imm_11 << 11) | (imm_19_12 << 12), 20);
     return *jtype;
 }
 
@@ -38,7 +38,7 @@ Instruction decode_IType(uint32_t bin_inst){
     itype->rd = (bin_inst >> 7) & 0b11111;
     itype->funct3 = (bin_inst >> 12) & 0b111;
     itype->rs1 = (bin_inst >> 15) & 0b11111;
-    itype->imm = (bin_inst >> 20);
+    itype->imm = sign_extend(bin_inst >> 20, 12);
     return *itype;
 }
 
@@ -51,7 +51,7 @@ Instruction decode_SType(uint32_t bin_inst){
     int imm = (bin_inst >> 7) & 0b1111111;
     int imm_11_5 = (imm >> 5) & 0b1111111;
     int imm_4_0 = imm & 0b11111;
-    stype->imm = (imm_11_5 << 5) | imm_4_0;
+    stype->imm = sign_extend((imm_11_5 << 5) | imm_4_0, 12);
     return *stype;
 }
 
@@ -65,7 +65,7 @@ Instruction decode_BType(uint32_t bin_inst){
     int imm_12 = (imm >> 6) & 0b1;
     int imm_10_5 = (imm >> 5) & 0b111111;
     int imm_4_1 = (imm >> 1) & 0b1111;
-    btype->imm = (imm_12 << 12) | (imm_10_5 << 5) | (imm_4_1 << 1);
+    btype->imm = sign_extend((imm_12 << 12) | (imm_10_5 << 5) | (imm_4_1 << 1), 12);
     return *btype;
 }
 
