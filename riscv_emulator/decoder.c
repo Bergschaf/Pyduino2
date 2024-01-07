@@ -3,13 +3,15 @@
 //
 #include "decoder.h"
 
- decode(uint64_t inst){
+InstructionCallback decode(int64_t inst){
     int opcode = inst & 0b1111111;
 
     switch (opcode) {
         case 0b0110111: {
-            UType utype = decode_UType(inst);
+            Instruction utype = decode_UType(inst);
+            return (InstructionCallback) {&execute_lui, utype};
         }
 
     }
+    exit(1409);
 }

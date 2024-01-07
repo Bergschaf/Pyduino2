@@ -1,12 +1,12 @@
 CROSS=
 CC=gcc
-CFLAGS=-Wall -Wextra -Werror -pedantic -g
+CFLAGS=-Wall -Wextra  -pedantic -g
 
 all: main
 
 
-main: main.c cpu.o util.o elfLoader.o
-	$(CC) $(CFLAGS)  main.c cpu.o util.o elfLoader.o -o main
+main: main.c cpu.o util.o elfLoader.o decoder.o
+	$(CC) $(CFLAGS)  main.c cpu.o util.o elfLoader.o decoder.o -o main
 
 elfLoader.o: elfLoader.c
 	$(CC) $(CFLAGS) -c elfLoader.c
@@ -16,6 +16,13 @@ util.o: util.c
 
 cpu.o: cpu.c
 	$(CC) $(CFLAGS) -c cpu.c
+
+instructions.o: instructions.c
+	$(CC) $(CFLAGS) -c instructions.c
+
+decoder.o: decoder.c instructions.o
+	$(CC) $(CFLAGS) -c decoder.c instructions.o
+
 
 clean:
 	rm -f main

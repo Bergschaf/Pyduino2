@@ -4,8 +4,6 @@
 
 #include "cpu.h"
 
-
-
 void load_elf_executable(char *filename, Cpu *cpu) {
     ElfFile *file = malloc(sizeof(ElfFile));
     load_elf_file(filename, file);
@@ -32,5 +30,6 @@ uint64_t get_next_inst(Cpu *cpu) {
 
 void run_next(Cpu *cpu){
     uint64_t inst = get_next_inst(cpu);
-
+    InstructionCallback callback = decode(inst);
+    callback.func(cpu, callback.inst);
 }

@@ -6,10 +6,16 @@
 #define RISCV_EMULATOR_DECODERH_H
 #include <stdint.h>
 #include "config.h"
-#include "instructionType.h"
 #include "cpu.h"
+#include "instructions.h"
 
-typedef void (*instruction_callback)(Cpu *cpu, Instruction inst);
 
-(*)(*Cpu) decode(uint64_t inst);
+struct instruction_callback {
+    execute_instruction func;
+    Instruction inst;
+};
+typedef struct instruction_callback InstructionCallback;
+
+InstructionCallback decode(int64_t inst);
+
 #endif //RISCV_EMULATOR_DECODERH_H
