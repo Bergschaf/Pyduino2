@@ -13,6 +13,12 @@ InstructionCallback decode(uint64_t inst){
             Instruction utype = decode_UType(inst);
             return (InstructionCallback) {&execute_lui, utype};
         }
+        case 0b0010111: {
+            // auipc
+            Instruction utype = decode_UType(inst);
+            return (InstructionCallback) {&execute_auipc, utype};
+        }
+
         default: {
             printf("Unknown opcode: %b\n", opcode);
             exit(1409);
