@@ -13,6 +13,7 @@ InstructionCallback decode(uint64_t inst){
             Instruction utype = decode_UType(inst);
             return (InstructionCallback) {&execute_lui, utype};
         }
+
         case 0b0010111: {
             // auipc
             Instruction utype = decode_UType(inst);
@@ -181,6 +182,69 @@ InstructionCallback decode(uint64_t inst){
                     exit(1409);
                 }
             }
+
+        }
+
+        case 0b0110011: {
+            Instruction rtype = decode_RType(inst);
+            switch (rtype.funct3) {
+                case 0b000: {
+                    // add
+                    if (rtype.funct7 == 0b0000000) {
+                        return (InstructionCallback) {&execute_add, rtype};
+                    } else {
+                        // sub
+                        return (InstructionCallback) {&execute_sub, rtype};
+                    }
+                }
+                case 0b001: {
+                    // sll
+                    return (InstructionCallback) {&execute_sll, rtype};
+                }
+                case 0b010: {
+                    // slt
+                    return (InstructionCallback) {&execute_slt, rtype};
+                }
+                case 0b011: {
+                    // sltu
+                    return (InstructionCallback) {&execute_sltu, rtype};
+                }
+                case 0b100: {
+                    // xor
+                    return (InstructionCallback) {&execute_xor, rtype};
+                }
+                case 0b101: {
+                    // srl
+                    if (rtype.funct7 == 0b0000000) {
+                        return (InstructionCallback) {&execute_srl, rtype};
+                    } else {
+                        // sra
+                        return (InstructionCallback) {&execute_sra, rtype};
+                    }
+                }
+                case 0b110: {
+                    // or
+                    return (InstructionCallback) {&execute_or, rtype};
+                }
+                case 0b111: {
+                    // and
+                    return (InstructionCallback) {&execute_and, rtype};
+                }
+                default: {
+                    printf("Unknown funct3: %b\n", rtype.funct3);
+                    exit(1409);
+                }
+            }
+        }
+
+        case 0b1110011: {
+            // ecall
+            Instruction itype = decode_IType(inst);
+            return (InstructionCallback) {&execute_ecall, itype};
+        }
+
+        case 0b0011011: {
+            // IType
 
         }
 
