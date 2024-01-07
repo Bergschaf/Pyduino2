@@ -16,6 +16,6 @@ struct instruction_callback {
 };
 typedef struct instruction_callback InstructionCallback;
 
-InstructionCallback decode(int64_t inst);
+InstructionCallback decode(uint64_t inst);
 
 #endif //RISCV_EMULATOR_DECODERH_H

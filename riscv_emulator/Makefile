@@ -5,8 +5,8 @@ CFLAGS=-Wall -Wextra  -pedantic -g
 all: main
 
 
-main: main.c cpu.o util.o elfLoader.o decoder.o
-	$(CC) $(CFLAGS)  main.c cpu.o util.o elfLoader.o decoder.o -o main
+main: main.c cpu.o util.o elfLoader.o decoder.o instructions.o
+	$(CC) $(CFLAGS)  main.c cpu.o util.o elfLoader.o instructions.o decoder.o  -o main
 
 elfLoader.o: elfLoader.c
 	$(CC) $(CFLAGS) -c elfLoader.c
@@ -20,8 +20,8 @@ cpu.o: cpu.c
 instructions.o: instructions.c
 	$(CC) $(CFLAGS) -c instructions.c
 
-decoder.o: decoder.c instructions.o
-	$(CC) $(CFLAGS) -c decoder.c instructions.o
+decoder.o: decoder.c instructions.c
+	$(CC) $(CFLAGS) -c decoder.c instructions.o -o decoder.o
 
 
 clean:

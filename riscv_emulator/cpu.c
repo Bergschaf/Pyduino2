@@ -3,6 +3,9 @@
 //
 
 #include "cpu.h"
+#include "decoder.h"
+#include <execinfo.h>
+
 
 void load_elf_executable(char *filename, Cpu *cpu) {
     ElfFile *file = malloc(sizeof(ElfFile));
@@ -31,5 +34,14 @@ uint64_t get_next_inst(Cpu *cpu) {
 void run_next(Cpu *cpu){
     uint64_t inst = get_next_inst(cpu);
     InstructionCallback callback = decode(inst);
-    callback.func(cpu, callback.inst);
+    // print the name of the function
+    backtrace_symbols_fd(&callback.func, 1, 1);
+    print_Instruction(callback.inst);
+    //callback.func(cpu, callback.inst);
+}
+
+void run(Cpu *cpu){
+    while (cpu->pc < MEM_SIZE){
+        run_next(cpu);
+    }
 }

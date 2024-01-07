@@ -7,6 +7,7 @@
 #include "util.h"
 #include <stdlib.h>
 #include "config.h"
+#include "elfLoader.h"
 
 struct cpu {
     uint64_t pc;
@@ -18,6 +19,9 @@ typedef struct cpu Cpu;
 void load_elf_executable(char *filename, Cpu *cpu);
 
 uint64_t get_next_inst(Cpu *cpu);
+
+void run(Cpu *cpu);
+
 #endif //RISCV_1EMULATOR_CPU_H
 
 
