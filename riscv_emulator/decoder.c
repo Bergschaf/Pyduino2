@@ -5,7 +5,7 @@
 #include "instructions.h"
 
 
-InstructionCallback decode(uint64_t inst){
+InstructionCallback decode(uint64_t inst) {
     int opcode = inst & 0b1111111;
 
     switch (opcode) {
@@ -245,7 +245,62 @@ InstructionCallback decode(uint64_t inst){
 
         case 0b0011011: {
             // IType
+            Instruction itype = decode_IType(inst);
+            switch (itype.funct3) {
+                case 0b000: {
+                    // addiw
+                    return (InstructionCallback) {&execute_addiw, itype};
+                }
+                case 0b001: {
+                    // slliw
+                    return (InstructionCallback) {&execute_slliw, itype};
+                }
+                case 0b101: {
+                    // srliw
+                    if (itype.imm & 0b1000000) {
+                        // sraiw
+                        return (InstructionCallback) {&execute_sraiw, itype};
+                    } else {
+                        // srliw
+                        return (InstructionCallback) {&execute_srliw, itype};
+                    }
+                }
+            }
 
+
+        }
+
+        case 0b0111011: {
+            // RType
+            Instruction rtype = decode_RType(inst);
+            switch (rtype.funct3) {
+                case 0b000: {
+                    // addw
+                    if (rtype.funct7 == 0b0000000) {
+                        return (InstructionCallback) {&execute_addw, rtype};
+                    } else {
+                        // subw
+                        return (InstructionCallback) {&execute_subw, rtype};
+                    }
+                }
+                case 0b001: {
+                    // sllw
+                    return (InstructionCallback) {&execute_sllw, rtype};
+                }
+                case 0b101: {
+                    // srlw
+                    if (rtype.funct7 == 0b0000000) {
+                        return (InstructionCallback) {&execute_srlw, rtype};
+                    } else {
+                        // sraw
+                        return (InstructionCallback) {&execute_sraw, rtype};
+                    }
+                }
+                default: {
+                    printf("Unknown funct3: %b\n", rtype.funct3);
+                    exit(1409);
+                }
+            }
         }
 
         default: {

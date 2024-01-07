@@ -15,7 +15,7 @@ Instruction decode_UType(uint32_t bin_inst){
     struct Instruction *utype = malloc(sizeof(Instruction));
     utype->type = 4;
     utype->rd = (bin_inst >> 7) & 0b11111;
-    utype->imm = sign_extend(bin_inst >> 12, 20);
+    utype->imm = sign_extend(bin_inst & 0xFFFFF000, 32);
     return *utype;
 }
 
@@ -28,7 +28,7 @@ Instruction decode_JType(uint32_t bin_inst){
     int imm_10_1 = (imm >> 9) & 0b1111111111;
     int imm_11 = (imm >> 8) & 0b1;
     int imm_19_12 = imm & 0b11111111;
-    jtype->imm = sign_extend((imm_20 << 20) | (imm_10_1 << 1) | (imm_11 << 11) | (imm_19_12 << 12), 20);
+    jtype->imm = sign_extend((imm_20 << 20) | (imm_10_1 << 1) | (imm_11 << 11) | (imm_19_12 << 12), 21);
     return *jtype;
 }
 
@@ -139,75 +139,111 @@ void print_Instruction(Instruction inst){
 }
 
 void execute_lui(Cpu *cpu, Instruction inst){
+    // U-Type
     cpu->regs[inst.rd] = inst.imm;
 }
 
 void execute_auipc(Cpu *cpu, Instruction inst){
-    //
+    // U-Type
+    cpu->regs[inst.rd] = cpu->pc + inst.imm;
 }
 
 void execute_jal(Cpu *cpu, Instruction inst){
-    //
+    // J-Type
+    cpu->regs[inst.rd] = cpu->pc;
+    cpu->pc += inst.imm;
 }
 
 void execute_jalr(Cpu *cpu, Instruction inst){
-    //
+    // I-Type
+    cpu->regs[inst.rd] = cpu->pc + 4;
+    cpu->pc = cpu->regs[inst.rs1] + inst.imm;
 }
 
 void execute_beq(Cpu *cpu, Instruction inst){
-    //
+    // B-Type
+    if (cpu->regs[inst.rs1] == cpu->regs[inst.rs2]){
+        cpu->pc += inst.imm;
+    }
 }
 
 void execute_bne(Cpu *cpu, Instruction inst){
-    //
+    // B-Type
+    if (cpu->regs[inst.rs1] != cpu->regs[inst.rs2]){
+        cpu->pc += inst.imm;
+    }
 }
 
 void execute_blt(Cpu *cpu, Instruction inst){
-    //
+    // B-Type
+    if (cpu->regs[inst.rs1] < cpu->regs[inst.rs2]){
+        cpu->pc += inst.imm;
+    }
 }
 
 void execute_bge(Cpu *cpu, Instruction inst){
-    //
+    // B-Type
+    if (cpu->regs[inst.rs1] >= cpu->regs[inst.rs2]){
+        cpu->pc += inst.imm;
+    }
 }
 
 void execute_bltu(Cpu *cpu, Instruction inst){
-    //
+    // B-Type
+    if ((uint64_t)cpu->regs[inst.rs1] < (uint64_t)cpu->regs[inst.rs2]){
+        cpu->pc += inst.imm;
+    }
 }
 
 void execute_bgeu(Cpu *cpu, Instruction inst){
-    //
+    // B-Type
+    if ((uint64_t)cpu->regs[inst.rs1] >= (uint64_t)cpu->regs[inst.rs2]){
+        cpu->pc += inst.imm;
+    }
 }
 
 void execute_lb(Cpu *cpu, Instruction inst){
-    //
+    // I-Type
+    cpu->regs[inst.rd] = sign_extend(cpu->mem[cpu->regs[inst.rs1] + inst.imm], 8);
 }
 
 void execute_lh(Cpu *cpu, Instruction inst){
-    //
+    // I-Type
+    cpu->regs[inst.rd] = sign_extend((cpu->mem[cpu->regs[inst.rs1] + inst.imm] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1], 16);
 }
 
 void execute_lw(Cpu *cpu, Instruction inst){
-    //
+    // I-Type
+    cpu->regs[inst.rd] = sign_extend((cpu->mem[cpu->regs[inst.rs1] + inst.imm] << 24) | (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 16) | (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3], 32);
 }
 
 void execute_lbu(Cpu *cpu, Instruction inst){
-    //
+    // I-Type
+    cpu->regs[inst.rd] = cpu->mem[cpu->regs[inst.rs1] + inst.imm];
 }
 
 void execute_lhu(Cpu *cpu, Instruction inst){
-    //
+    // I-Type
+    cpu->regs[inst.rd] = (cpu->mem[cpu->regs[inst.rs1] + inst.imm] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1];
 }
 
 void execute_sb(Cpu *cpu, Instruction inst){
-    //
+    // S-Type
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = cpu->regs[inst.rs2] & 0xFF;
 }
 
 void execute_sh(Cpu *cpu, Instruction inst){
-    //
+    // S-Type
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = cpu->regs[inst.rs2] & 0xFF;
 }
 
 void execute_sw(Cpu *cpu, Instruction inst){
-    //
+    // S-Type
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = (cpu->regs[inst.rs2] >> 24) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = (cpu->regs[inst.rs2] >> 16) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] = cpu->regs[inst.rs2] & 0xFF;
 }
 
 void execute_addi(Cpu *cpu, Instruction inst){
