@@ -48,9 +48,8 @@ Instruction decode_SType(uint32_t bin_inst){
     stype->funct3 = (bin_inst >> 12) & 0b111;
     stype->rs1 = (bin_inst >> 15) & 0b11111;
     stype->rs2 = (bin_inst >> 20) & 0b11111;
-    int imm = (bin_inst >> 7) & 0b1111111;
-    int imm_11_5 = (imm >> 5) & 0b1111111;
-    int imm_4_0 = imm & 0b11111;
+    int imm_11_5 = (bin_inst >> 25) & 0b1111111;
+    int imm_4_0 = (bin_inst >> 7) & 0b11111;
     stype->imm = sign_extend((imm_11_5 << 5) | imm_4_0, 12);
     return *stype;
 }
@@ -61,11 +60,11 @@ Instruction decode_BType(uint32_t bin_inst){
     btype->funct3 = (bin_inst >> 12) & 0b111;
     btype->rs1 = (bin_inst >> 15) & 0b11111;
     btype->rs2 = (bin_inst >> 20) & 0b11111;
-    int imm = (bin_inst >> 7) & 0b1111111;
-    int imm_12 = (imm >> 6) & 0b1;
-    int imm_10_5 = (imm >> 5) & 0b111111;
-    int imm_4_1 = (imm >> 1) & 0b1111;
-    btype->imm = sign_extend((imm_12 << 12) | (imm_10_5 << 5) | (imm_4_1 << 1), 12);
+    int imm_11 = (bin_inst >> 31) & 0b1;
+    int imm_12 = (bin_inst >> 7) & 0b1;
+    int imm_10_5 = (bin_inst >> 25) & 0b111111;
+    int imm_4_1 = (bin_inst >> 8) & 0b1111;
+    btype->imm = sign_extend((imm_12 << 12) | (imm_11 << 11) | (imm_10_5 << 5) | imm_4_1 << 1, 12);
     return *btype;
 }
 
@@ -82,23 +81,23 @@ Instruction decode_RType(uint32_t bin_inst){
 
 
 void print_UType(Instruction utype){
-    printf("UType:\n rd: %s\n imm: %lx\n", reg_names[utype.rd], utype.imm);
+    printf("UType:\n rd: %s\n imm: %lx | %ld\n", reg_names[utype.rd], utype.imm, utype.imm);
 }
 
 void print_JType(Instruction jtype){
-    printf("JType:\n rd: %s\n imm: %lx\n", reg_names[jtype.rd], jtype.imm);
+    printf("JType:\n rd: %s\n imm: %lx | %ld\n", reg_names[jtype.rd], jtype.imm, jtype.imm);
 }
 
 void print_IType(Instruction itype){
-    printf("IType:\n rd: %s\n funct3: %d\n rs1: %s\n imm: %lx\n", reg_names[itype.rd], itype.funct3, reg_names[itype.rs1], itype.imm);
+    printf("IType:\n rd: %s\n funct3: %d\n rs1: %s\n imm: %lx | %ld\n", reg_names[itype.rd], itype.funct3, reg_names[itype.rs1], itype.imm, itype.imm);
 }
 
 void print_SType(Instruction stype){
-    printf("SType:\n funct3: %d\n rs1: %s\n rs2: %s\n imm: %lx\n", stype.funct3, reg_names[stype.rs1], reg_names[stype.rs2], stype.imm);
+    printf("SType:\n funct3: %d\n rs1: %s\n rs2: %s\n imm: %lx | %ld\n", stype.funct3, reg_names[stype.rs1], reg_names[stype.rs2], stype.imm, stype.imm);
 }
 
 void print_BType(Instruction btype){
-    printf("BType:\n funct3: %d\n rs1: %s\n rs2: %s\n imm: %lx\n", btype.funct3, reg_names[btype.rs1], reg_names[btype.rs2], btype.imm);
+    printf("BType:\n funct3: %d\n rs1: %s\n rs2: %s\n imm: %lx | %ld\n", btype.funct3, reg_names[btype.rs1], reg_names[btype.rs2], btype.imm, btype.imm);
 }
 
 void print_RType(Instruction rtype){
@@ -292,5 +291,57 @@ void execute_fence(Cpu *cpu, Instruction inst){
 }
 
 void execute_ecall(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_ebreak(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_lwu(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_ld(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_sd(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_addiw(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_slliw(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_srliw(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_sraiw(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_addw(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_subw(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_sllw(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_srlw(Cpu *cpu, Instruction inst){
+    //
+}
+
+void execute_sraw(Cpu *cpu, Instruction inst){
     //
 }
