@@ -4,8 +4,16 @@
 
 #include "instructions.h"
 
+static const char* reg_names[32] = {
+        "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+        "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
+        "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
+        "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
+};
+
 Instruction decode_UType(uint32_t bin_inst){
     struct Instruction *utype = malloc(sizeof(Instruction));
+    utype->type = 4;
     utype->rd = (bin_inst >> 7) & 0b11111;
     utype->imm = bin_inst >> 12;
     return *utype;
@@ -13,6 +21,7 @@ Instruction decode_UType(uint32_t bin_inst){
 
 Instruction decode_JType(uint32_t bin_inst){
     struct Instruction *jtype = malloc(sizeof(Instruction));
+    jtype->type = 5;
     jtype->rd = (bin_inst >> 7) & 0b11111;
     int imm = (bin_inst >> 12) & 0b11111111111111111111;
     int imm_20 = (imm >> 19) & 0b1;
@@ -25,6 +34,7 @@ Instruction decode_JType(uint32_t bin_inst){
 
 Instruction decode_IType(uint32_t bin_inst){
     struct Instruction *itype = malloc(sizeof(Instruction));
+    itype->type = 1;
     itype->rd = (bin_inst >> 7) & 0b11111;
     itype->funct3 = (bin_inst >> 12) & 0b111;
     itype->rs1 = (bin_inst >> 15) & 0b11111;
@@ -34,6 +44,7 @@ Instruction decode_IType(uint32_t bin_inst){
 
 Instruction decode_SType(uint32_t bin_inst){
     struct Instruction *stype = malloc(sizeof(Instruction));
+    stype->type = 2;
     stype->funct3 = (bin_inst >> 12) & 0b111;
     stype->rs1 = (bin_inst >> 15) & 0b11111;
     stype->rs2 = (bin_inst >> 20) & 0b11111;
@@ -46,6 +57,7 @@ Instruction decode_SType(uint32_t bin_inst){
 
 Instruction decode_BType(uint32_t bin_inst){
     struct Instruction *btype = malloc(sizeof(Instruction));
+    btype->type = 3;
     btype->funct3 = (bin_inst >> 12) & 0b111;
     btype->rs1 = (bin_inst >> 15) & 0b11111;
     btype->rs2 = (bin_inst >> 20) & 0b11111;
@@ -59,6 +71,7 @@ Instruction decode_BType(uint32_t bin_inst){
 
 Instruction decode_RType(uint32_t bin_inst){
     struct Instruction *rtype = malloc(sizeof(Instruction));
+    rtype->type = 0;
     rtype->rd = (bin_inst >> 7) & 0b11111;
     rtype->funct3 = (bin_inst >> 12) & 0b111;
     rtype->rs1 = (bin_inst >> 15) & 0b11111;
@@ -69,27 +82,27 @@ Instruction decode_RType(uint32_t bin_inst){
 
 
 void print_UType(Instruction utype){
-    printf("UType:\n rd: %b\n imm: %lb\n", utype.rd, utype.imm);
-}
-
-void print_RType(Instruction rtype){
-    printf("RType:\n rd: %b\n funct3: %b\n rs1: %b\n rs2: %b\n funct7: %b\n", rtype.rd, rtype.funct3, rtype.rs1, rtype.rs2, rtype.funct7);
-}
-
-void print_IType(Instruction itype){
-    printf("IType:\n rd: %b\n imm: %lb\n", itype.rd, itype.imm);
-}
-
-void print_SType(Instruction stype){
-    printf("SType:\n funct3: %b\n rs1: %b\n rs2: %b\n imm: %lb\n", stype.funct3, stype.rs1, stype.rs2, stype.imm);
-}
-
-void print_BType(Instruction btype){
-    printf("BType:\n funct3: %b\n rs1: %b\n rs2: %b\n imm: %lb\n", btype.funct3, btype.rs1, btype.rs2, btype.imm);
+    printf("UType:\n rd: %s\n imm: %lx\n", reg_names[utype.rd], utype.imm);
 }
 
 void print_JType(Instruction jtype){
-    printf("JType:\n rd: %b\n imm: %lb\n", jtype.rd, jtype.imm);
+    printf("JType:\n rd: %s\n imm: %lx\n", reg_names[jtype.rd], jtype.imm);
+}
+
+void print_IType(Instruction itype){
+    printf("IType:\n rd: %s\n funct3: %d\n rs1: %s\n imm: %lx\n", reg_names[itype.rd], itype.funct3, reg_names[itype.rs1], itype.imm);
+}
+
+void print_SType(Instruction stype){
+    printf("SType:\n funct3: %d\n rs1: %s\n rs2: %s\n imm: %lx\n", stype.funct3, reg_names[stype.rs1], reg_names[stype.rs2], stype.imm);
+}
+
+void print_BType(Instruction btype){
+    printf("BType:\n funct3: %d\n rs1: %s\n rs2: %s\n imm: %lx\n", btype.funct3, reg_names[btype.rs1], reg_names[btype.rs2], btype.imm);
+}
+
+void print_RType(Instruction rtype){
+    printf("RType:\n rd: %s\n funct3: %d\n rs1: %s\n rs2: %s\n funct7: %d\n", reg_names[rtype.rd], rtype.funct3, reg_names[rtype.rs1], reg_names[rtype.rs2], rtype.funct7);
 }
 
 

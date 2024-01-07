@@ -1,6 +1,6 @@
 CROSS=
 CC=gcc
-CFLAGS=-Wall -Wextra  -pedantic -g
+CFLAGS=-Wall -Wextra  -pedantic -g -rdynamic
 
 all: main
 

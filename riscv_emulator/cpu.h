@@ -9,6 +9,10 @@
 #include "config.h"
 #include "elfLoader.h"
 
+// List for register names
+
+
+
 struct cpu {
     uint64_t pc;
     int64_t regs[32];

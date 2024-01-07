@@ -35,7 +35,8 @@ void run_next(Cpu *cpu){
     uint64_t inst = get_next_inst(cpu);
     InstructionCallback callback = decode(inst);
     // print the name of the function
-    backtrace_symbols_fd(&callback.func, 1, 1);
+    void *funprt = callback.func;
+    backtrace_symbols_fd(&funprt, 1, 1);
     print_Instruction(callback.inst);
     //callback.func(cpu, callback.inst);
 }
