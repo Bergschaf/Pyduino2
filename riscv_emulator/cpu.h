@@ -14,7 +14,7 @@
 
 
 struct cpu {
-    uint64_t pc;
+    int64_t pc;
     int64_t regs[32];
     uint8_t mem[MEM_SIZE];
 };

@@ -5,8 +5,8 @@ CFLAGS=-Wall -Wextra  -pedantic -g -rdynamic
 all: main
 
 
-main: main.c cpu.o util.o elfLoader.o decoder.o instructions.o
-	$(CC) $(CFLAGS)  main.c cpu.o util.o elfLoader.o instructions.o decoder.o  -o main
+main: main.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o
+	$(CC) $(CFLAGS)  main.c cpu.o util.o elfLoader.o instructions.o decoder.o kernel.o  -o main
 
 elfLoader.o: elfLoader.c
 	$(CC) $(CFLAGS) -c elfLoader.c
@@ -23,6 +23,8 @@ instructions.o: instructions.c
 decoder.o: decoder.c instructions.c
 	$(CC) $(CFLAGS) -c decoder.c instructions.o -o decoder.o
 
+kernel.o: kernel.c
+	$(CC) $(CFLAGS) -c kernel.c
 
 clean:
 	rm -f main

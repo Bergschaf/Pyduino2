@@ -36,11 +36,15 @@ void run_next(Cpu *cpu){
     InstructionCallback callback = decode(inst);
     // print the name of the function
     void *funprt = callback.func;
+    if (LOG_LEVEL == 0) {
+        printf("PC: %lx\n", cpu->pc - 4);
+        backtrace_symbols_fd(&funprt, 1, 1);
+        print_Instruction(callback.inst);
+        printf("\n\n");
+    }
     printf("PC: %lx\n", cpu->pc - 4);
-    backtrace_symbols_fd(&funprt, 1, 1);
-    print_Instruction(callback.inst);
-    printf("\n\n");
-    //callback.func(cpu, callback.inst);
+    // print stack pointer
+    callback.func(cpu, callback.inst);
 }
 
 void run(Cpu *cpu){

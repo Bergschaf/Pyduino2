@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "config.h"
 #include "cpu.h"
+#include "kernel.h"
 
 struct Instruction {
     uint8_t rd;
@@ -16,7 +17,7 @@ struct Instruction {
     uint8_t rs1;
     uint8_t rs2;
     uint8_t funct7;
-    uint64_t imm;
+    int64_t imm;
     uint8_t type; // 0 = RType, 1 = IType, 2 = SType, 3 = BType, 4 = UType, 5 = JType
 };
 typedef struct Instruction Instruction;
