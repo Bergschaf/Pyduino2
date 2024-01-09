@@ -4,7 +4,7 @@ from elf_loader import ELF_File
 import termcolor
 from kernel import Kernel
 
-LOG_LEVEL = 2
+LOG_LEVEL = 3
 BREAKPOINTS = []
 DISABLE_BREAKPOINTS = True
 
@@ -15,9 +15,9 @@ def init(file):
     to_load = elf.get_program_data()
 
     # load the Segments specified in the program headers
-    memory_size = 100000000  # last segment's virtual address + size
+    memory_size = 1000000  # last segment's virtual address + size
     memory = Memory(memory_size)
-    memory.start_adress = -10000
+    memory.start_adress = 0 # TODO
 
     with open(file, "rb") as f:
         f = f.read()
@@ -34,7 +34,7 @@ def init(file):
 
 
     # set the stack pointer
-    kernel.registers[2] = 0
+    kernel.registers[2] = memory_size - 1000
 
     return kernel
 
@@ -52,6 +52,7 @@ def run_next(kernel):
     res = instruction.do(kernel)
     if res is not None:
         return res
+    kernel.breakpoint()
 
     if prev_pc in BREAKPOINTS:
         kernel.breakpoint()
@@ -84,7 +85,7 @@ def run_test_file(file):
 
 
 if __name__ == '__main__':
-    file = "sl"
+    file = "test"
     kernel = init(file)
     # 0x156cc
     run(kernel)

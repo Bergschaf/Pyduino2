@@ -14,7 +14,7 @@ elfLoader.o: elfLoader.c
 util.o: util.c
 	$(CC) $(CFLAGS) -c util.c
 
-cpu.o: cpu.c
+cpu.o: cpu.c config.h
 	$(CC) $(CFLAGS) -c cpu.c
 
 instructions.o: instructions.c

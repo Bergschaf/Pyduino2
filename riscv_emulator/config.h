@@ -7,4 +7,5 @@
 #define XLEN 64
 #define MEM_SIZE 1000000
 #define LOG_LEVEL 2
+#define STACK_SIZE 10000
 #endif //RISCV_EMULATOR_CONFIG_H

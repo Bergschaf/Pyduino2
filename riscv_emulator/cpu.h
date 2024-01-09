@@ -26,6 +26,10 @@ uint64_t get_next_inst(Cpu *cpu);
 
 void run(Cpu *cpu);
 
+void print_registers(Cpu *cpu);
+
+void print_debug(Cpu *cpu);
+
 #endif //RISCV_1EMULATOR_CPU_H
 
 

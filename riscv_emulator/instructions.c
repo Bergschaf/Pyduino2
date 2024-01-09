@@ -4,12 +4,8 @@
 
 #include "instructions.h"
 
-static const char *reg_names[32] = {
-        "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
-        "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
-        "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7",
-        "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
-};
+
+
 
 Instruction decode_UType(uint32_t bin_inst) {
     struct Instruction *utype = malloc(sizeof(Instruction));
@@ -236,6 +232,10 @@ void execute_lhu(Cpu *cpu, Instruction inst) {
 
 void execute_sb(Cpu *cpu, Instruction inst) {
     // S-Type
+    // print imm and rs1
+    printf("imm: %lx\n", inst.imm);
+    printf("rs1: %lx\n", cpu->regs[inst.rs1]);
+    printf("SB: %lx\n", cpu->regs[inst.rs1] + inst.imm);
     cpu->mem[cpu->regs[inst.rs1] + inst.imm] = cpu->regs[inst.rs2] & 0xFF;
 }
 
