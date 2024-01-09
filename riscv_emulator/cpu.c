@@ -42,6 +42,7 @@ uint64_t get_next_inst(Cpu *cpu) {
     return inst;
 }
 
+
 void run_next(Cpu *cpu) {
     uint64_t inst = get_next_inst(cpu);
     InstructionCallback callback = decode(inst);
@@ -74,7 +75,7 @@ void run_next(Cpu *cpu) {
 void print_debug(Cpu *cpu) {
     printf("PC: 0x%lx\n", cpu->pc);
     print_registers(cpu);
-    printf("\n\n");
+    printf("end\n");
 }
 
 void run(Cpu *cpu) {

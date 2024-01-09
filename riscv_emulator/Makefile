@@ -8,6 +8,9 @@ all: main
 main: main.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o
 	$(CC) $(CFLAGS)  main.c cpu.o util.o elfLoader.o instructions.o decoder.o kernel.o  -o main
 
+debug: debug.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o
+	$(CC) $(CFLAGS) debug.c cpu.o util.o elfLoader.o instructions.o decoder.o kernel.o  -o debug
+
 elfLoader.o: elfLoader.c
 	$(CC) $(CFLAGS) -c elfLoader.c
 
@@ -25,6 +28,8 @@ decoder.o: decoder.c instructions.c
 
 kernel.o: kernel.c
 	$(CC) $(CFLAGS) -c kernel.c
+
+
 
 clean:
 	rm -f main

@@ -26,6 +26,8 @@ uint64_t get_next_inst(Cpu *cpu);
 
 void run(Cpu *cpu);
 
+void run_next(Cpu *cpu);
+
 void print_registers(Cpu *cpu);
 
 void print_debug(Cpu *cpu);
