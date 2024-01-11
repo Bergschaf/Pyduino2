@@ -31,6 +31,7 @@ void load_elf_executable(char *filename, Cpu *cpu) {
             }
         }
     }
+    free(file->data);
     free(file);
     // Set sp to the end of the memory
     cpu->regs[2] = MEM_SIZE - 1000;
@@ -127,6 +128,15 @@ void memory_loads(Cpu *cpu, int64_t address, char *string) {
 int64_t memory_loadw(Cpu *cpu, int64_t address) {
     int64_t res = 0;
     for (int i = 0; i < 4; i++) {
+        res |= cpu->mem[address + i] << (8 * i);
+    }
+    return res;
+}
+
+
+int64_t memory_loaddw(Cpu *cpu, int64_t address) {
+    int64_t res = 0;
+    for (int i = 0; i < 8; i++) {
         res |= cpu->mem[address + i] << (8 * i);
     }
     return res;
