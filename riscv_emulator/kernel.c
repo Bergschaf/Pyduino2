@@ -4,7 +4,7 @@
 
 #include "kernel.h"
 
-int64_t sys_uname(Cpu *cpu,  int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
+int64_t sys_uname(Cpu *cpu, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
     int size = 65;
     char fillchar = '0';
 
@@ -27,6 +27,28 @@ int64_t syscall_discard(int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, 
     return -1;
 }
 
+int64_t sys_exit(int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
+    printf("exit(%ld)\n", arg0);
+    exit(arg0);
+}
+
+int64_t sys_writev(Cpu *cpu, int64_t arg0, int64_t addr, int64_t count, int64_t arg3, int64_t arg4, int64_t arg5) {
+    // treat as print TODO change this
+    int res = 0;
+    for (int i = 0; i < count; ++i) {
+        int64_t base = memory_loadw(cpu, addr + i * 16);
+        int64_t len = memory_loadw(cpu, addr + i * 16 + 8);
+        char *str = malloc(len + 1);
+        memory_loads(cpu, base, str);
+        // print colored
+        printf("\033[0;32m");
+        printf("%s", str);
+        printf("\033[0m");
+        res += len;
+    }
+    return res;
+}
+
 void do_syscall(Cpu *cpu) {
     int64_t return_value = -1;
     int64_t syscall_num = cpu->regs[17];
@@ -38,9 +60,21 @@ void do_syscall(Cpu *cpu) {
     int64_t arg4 = cpu->regs[14];
     int64_t arg5 = cpu->regs[15];
 
-
-    printf("syscall %ld\n", syscall_num);
+    if (LOG_LEVEL <= 3) {
+        // print yellow
+        printf("\033[0;33m");
+        printf("syscall %ld\n", syscall_num);
+        printf("\033[0m");
+    }
     switch (syscall_num) {
+        case 66:
+            return_value = sys_writev(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
+        case 93:
+            return_value = sys_exit(arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
         case 96:
             return_value = sys_set_tid(arg0, arg1, arg2, arg3, arg4, arg5);
             break;
@@ -48,7 +82,10 @@ void do_syscall(Cpu *cpu) {
             return_value = sys_uname(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
             break;
         default:
-            printf("Unknown syscall %ld\n", syscall_num);
+            // print red unknown syscall
+            printf("\033[0;31m");
+            printf("unknown syscall %ld\n", syscall_num);
+            printf("\033[0m");
             return_value = syscall_discard(arg0, arg1, arg2, arg3, arg4, arg5);
             break;
     }

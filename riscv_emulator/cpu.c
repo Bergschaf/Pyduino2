@@ -93,7 +93,7 @@ void run(Cpu *cpu) {
     while (cpu->pc < MEM_SIZE) {
         run_next(cpu);
         i++;
-        if (i > 10000) {
+        if (i > 100000) {
             break;
         }
     }
@@ -121,6 +121,15 @@ void memory_loads(Cpu *cpu, int64_t address, char *string) {
         i++;
     }
     string[i] = '\0';
+}
+
+
+int64_t memory_loadw(Cpu *cpu, int64_t address) {
+    int64_t res = 0;
+    for (int i = 0; i < 4; i++) {
+        res |= cpu->mem[address + i] << (8 * i);
+    }
+    return res;
 }
 
 

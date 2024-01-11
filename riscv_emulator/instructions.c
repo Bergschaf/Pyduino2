@@ -208,25 +208,27 @@ void execute_lb(Cpu *cpu, Instruction inst) {
 void execute_lh(Cpu *cpu, Instruction inst) {
     // I-Type
     cpu->regs[inst.rd] = sign_extend(
-            (cpu->mem[cpu->regs[inst.rs1] + inst.imm] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1], 16);
+            (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm], 16);
 }
 
 void execute_lw(Cpu *cpu, Instruction inst) {
     // I-Type
     cpu->regs[inst.rd] = sign_extend(
-            (cpu->mem[cpu->regs[inst.rs1] + inst.imm] << 24) | (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 16) |
-            (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3], 32);
+            (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24) |
+            (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16) |
+            (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) |
+            cpu->mem[cpu->regs[inst.rs1] + inst.imm], 32);
 }
 
 void execute_lbu(Cpu *cpu, Instruction inst) {
     // I-Type
-    printf("lbu: 0x%lx\n", cpu->regs[inst.rs1] + inst.imm);
+    //printf("lbu: 0x%lx\n", cpu->regs[inst.rs1] + inst.imm);
     cpu->regs[inst.rd] = cpu->mem[cpu->regs[inst.rs1] + inst.imm];
 }
 
 void execute_lhu(Cpu *cpu, Instruction inst) {
     // I-Type
-    cpu->regs[inst.rd] = (cpu->mem[cpu->regs[inst.rs1] + inst.imm] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1];
+    cpu->regs[inst.rd] = (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm];
 }
 
 void execute_sb(Cpu *cpu, Instruction inst) {
@@ -240,16 +242,16 @@ void execute_sb(Cpu *cpu, Instruction inst) {
 
 void execute_sh(Cpu *cpu, Instruction inst) {
     // S-Type
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = cpu->regs[inst.rs2] & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = cpu->regs[inst.rs2] & 0xFF;
 }
 
 void execute_sw(Cpu *cpu, Instruction inst) {
     // S-Type
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = (cpu->regs[inst.rs2] >> 24) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = (cpu->regs[inst.rs2] >> 16) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] = cpu->regs[inst.rs2] & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] = (cpu->regs[inst.rs2] >> 24) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] = (cpu->regs[inst.rs2] >> 16) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = cpu->regs[inst.rs2] & 0xFF;
 }
 
 void execute_addi(Cpu *cpu, Instruction inst) {
@@ -361,33 +363,57 @@ void execute_ebreak(Cpu *cpu, Instruction inst) {
 
 void execute_lwu(Cpu *cpu, Instruction inst) {
     // I-Type
-    cpu->regs[inst.rd] =
-            (cpu->mem[cpu->regs[inst.rs1] + inst.imm] << 24) | (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 16) |
-            (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3];
+    cpu->regs[inst.rd] =  (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24) |
+                          (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16) |
+                          (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) |
+                          cpu->mem[cpu->regs[inst.rs1] + inst.imm];
 }
 
 void execute_ld(Cpu *cpu, Instruction inst) {
+    /*
+    printf("ld: 0x%lx\n", cpu->regs[inst.rs1] + inst.imm);
+    // print the bytes as they are in memory
+    printf("ld: 0x%x\n", cpu->mem[cpu->regs[inst.rs1] + inst.imm + 7]);
+    printf("ld: 0x%x\n", cpu->mem[cpu->regs[inst.rs1] + inst.imm + 6]);
+    printf("ld: 0x%x\n", cpu->mem[cpu->regs[inst.rs1] + inst.imm + 5]);
+    printf("ld: 0x%x\n", cpu->mem[cpu->regs[inst.rs1] + inst.imm + 4]);
+    printf("ld: 0x%x\n", cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3]);
+    printf("ld: 0x%x\n", cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2]);
+    printf("ld: 0x%x\n", cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1]);
+    printf("ld: 0x%x\n", cpu->mem[cpu->regs[inst.rs1] + inst.imm]);
+    printf("\n\n");
+    // print the shifted parts that are ored together
+    printf("ld: 0x%lx\n", ((int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 7] << 56));
+    printf("ld: 0x%lx\n", ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 6] << 48));
+    printf("ld: 0x%lx\n", ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 5] << 40));
+    printf("ld: 0x%lx\n", ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 4] << 32));
+    printf("ld: 0x%lx\n", (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24));
+    printf("ld: 0x%lx\n", (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16));
+    printf("ld: 0x%lx\n", (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8));
+    printf("ld: 0x%lx\n", cpu->mem[cpu->regs[inst.rs1] + inst.imm]);*/
+
+
     // I-Type
-    cpu->regs[inst.rd] = ((int64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm] << 56) |
-                         ((int64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 48) |
-                         ((int64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 40) |
-                         ((int64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 32) |
-                         (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 4] << 24) |
-                         (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 5] << 16) |
-                         (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 6] << 8) |
-                         cpu->mem[cpu->regs[inst.rs1] + inst.imm + 7];
+    cpu->regs[inst.rd] = ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 7] << 56) |
+                          ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 6] << 48) |
+                          ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 5] << 40) |
+                          ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 4] << 32) |
+                          ((int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24) |
+                          ((int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16) |
+                          ((int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) |
+                            (int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm];
 }
 
 void execute_sd(Cpu *cpu, Instruction inst) {
     // S-Type
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = (cpu->regs[inst.rs2] >> 56) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = (cpu->regs[inst.rs2] >> 48) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] = (cpu->regs[inst.rs2] >> 40) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] = (cpu->regs[inst.rs2] >> 32) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 4] = (cpu->regs[inst.rs2] >> 24) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 5] = (cpu->regs[inst.rs2] >> 16) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 6] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 7] = cpu->regs[inst.rs2] & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 7] = (cpu->regs[inst.rs2] >> 56) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 6] = (cpu->regs[inst.rs2] >> 48) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 5] = (cpu->regs[inst.rs2] >> 40) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 4] = (cpu->regs[inst.rs2] >> 32) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] = (cpu->regs[inst.rs2] >> 24) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] = (cpu->regs[inst.rs2] >> 16) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
+    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = cpu->regs[inst.rs2] & 0xFF;
 }
 
 void execute_addiw(Cpu *cpu, Instruction inst) {

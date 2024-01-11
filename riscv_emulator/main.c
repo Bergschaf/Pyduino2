@@ -10,5 +10,5 @@ int main() {
     Cpu *cpu = malloc(sizeof(Cpu));
     load_elf_executable("test", cpu);
     run(cpu);
-    return 43;
+    return 111;
 }

@@ -36,3 +36,5 @@ kernel.o: kernel.c
 
 clean:
 	rm -f main
+	rm -f debug
+	rm -f debug_elfLoader
