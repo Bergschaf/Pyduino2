@@ -11,12 +11,16 @@ int64_t sys_uname(Cpu *cpu,  int64_t arg0, int64_t arg1, int64_t arg2, int64_t a
     char *res = malloc(size);
     memory_puts(cpu, arg0, ljust("Linux", res, size, fillchar, '\0'));
     memory_puts(cpu, arg0 + size * 1, ljust("u", res, size, fillchar, '\0'));
-    memory_puts(cpu, arg0 + size * 2, ljust("0.0.0", res, size, fillchar, '\0'));
+    memory_puts(cpu, arg0 + size * 2, ljust("6.6.8", res, size, fillchar, '\0'));
     memory_puts(cpu, arg0 + size * 3, ljust("u", res, size, fillchar, '\0'));
     memory_puts(cpu, arg0 + size * 4, ljust("riscv64", res, size, fillchar, '\0'));
-    memory_puts(cpu, arg0 + size * 5, ljust("riscv64", res, size, fillchar, '\0'));
+    memory_puts(cpu, arg0 + size * 5, ljust("u", res, size, fillchar, '\0'));
 
     return 0;
+}
+
+int64_t sys_set_tid(int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
+    return 69;
 }
 
 int64_t syscall_discard(int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
@@ -37,6 +41,9 @@ void do_syscall(Cpu *cpu) {
 
     printf("syscall %ld\n", syscall_num);
     switch (syscall_num) {
+        case 96:
+            return_value = sys_set_tid(arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
         case 160:
             return_value = sys_uname(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
             break;

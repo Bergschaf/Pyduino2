@@ -117,7 +117,10 @@ void load_elf_file(char *filename, ElfFile *elfFile) {
     //}
 
     // Read header
-    uint8_t *header = elfFile->data;
+    uint8_t *header = malloc(64);
+    for (int i = 0; i < 64; ++i) {
+        header[i] = elfFile->data[i];
+    }
 
     // Check magic number
     // TODO

@@ -8,7 +8,7 @@ f1 = f1.readlines()
 f2 = f2.readlines()
 print(len(f1), len(f2))
 print(hex(len(f1)), hex(len(f2)))
-for i in range(0,len(f1)):
+for i in range(len(f1)-1000,0,-1):
     if f1[i] != f2[i]:
         print(f"Error at line {i} | {hex(i)}:")
         print(f"py: {f1[i]}")
