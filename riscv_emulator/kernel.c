@@ -10,11 +10,11 @@ int64_t sys_uname(Cpu *cpu,  int64_t arg0, int64_t arg1, int64_t arg2, int64_t a
 
     char *res = malloc(size);
     memory_puts(cpu, arg0, ljust("Linux", res, size, fillchar, '\0'));
-    memory_puts(cpu, arg1, ljust("u", res, size, fillchar, '\0'));
-    memory_puts(cpu, arg2, ljust("0.0.0", res, size, fillchar, '\0'));
-    memory_puts(cpu, arg3, ljust("u", res, size, fillchar, '\0'));
-    memory_puts(cpu, arg4, ljust("riscv64", res, size, fillchar, '\0'));
-    memory_puts(cpu, arg5, ljust("riscv64", res, size, fillchar, '\0'));
+    memory_puts(cpu, arg0 + size * 1, ljust("u", res, size, fillchar, '\0'));
+    memory_puts(cpu, arg0 + size * 2, ljust("0.0.0", res, size, fillchar, '\0'));
+    memory_puts(cpu, arg0 + size * 3, ljust("u", res, size, fillchar, '\0'));
+    memory_puts(cpu, arg0 + size * 4, ljust("riscv64", res, size, fillchar, '\0'));
+    memory_puts(cpu, arg0 + size * 5, ljust("riscv64", res, size, fillchar, '\0'));
 
     return 0;
 }

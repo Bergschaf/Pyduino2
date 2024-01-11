@@ -4,7 +4,7 @@ from elf_loader import ELF_File
 import termcolor
 from kernel import Kernel
 
-LOG_LEVEL = 3
+LOG_LEVEL = 2
 BREAKPOINTS = []
 DISABLE_BREAKPOINTS = True
 
@@ -22,6 +22,7 @@ def init(file):
     with open(file, "rb") as f:
         f = f.read()
         for segment in to_load:
+            print("vaddr: ", hex(segment[2]), "  size: ", hex(segment[1]), " offset: ", hex(segment[0]))
             memory.store_bytes(segment[2], f[segment[0]:segment[0] + segment[1]])
 
     # initialize registers
@@ -30,8 +31,6 @@ def init(file):
     kernel = Kernel(memory, registers, elf, log_level=LOG_LEVEL)
     kernel.disable_breakpoints = DISABLE_BREAKPOINTS
     kernel.log("Memory size: ", memory_size, priority=2)
-
-
 
     # set the stack pointer
     kernel.registers[2] = memory_size - 1000
@@ -88,6 +87,7 @@ if __name__ == '__main__':
     file = "test"
     kernel = init(file)
     # 0x156cc
+    exit()
     run(kernel)
 
     # 11f88 -> evlt stdout ecall

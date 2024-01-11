@@ -112,6 +112,9 @@ void load_elf_file(char *filename, ElfFile *elfFile) {
     printf("Size: %ld\n", size);
     elfFile->data = malloc(size);
     fread(elfFile->data, 1, size, file);
+    //for (int i = 0; i < size; ++i) {
+    //    printf("%x\n", elfFile->data[i]);
+    //}
 
     // Read header
     uint8_t *header = elfFile->data;
@@ -181,7 +184,10 @@ void load_elf_file(char *filename, ElfFile *elfFile) {
     elfFile->programHeaders = malloc(sizeof(ProgramHeader) * elfFile->programHeader_num);
 
     for (int i = 0; i < elfFile->programHeader_num; i++) {
-        uint8_t *programHeaderData = elfFile->data + elfFile->programHeader_offset + i * elfFile->programHeader_size;
+        uint8_t *programHeaderData = malloc(elfFile->programHeader_size);
+        for (int j = 0; j < elfFile->programHeader_size; ++j) {
+            programHeaderData[j] = elfFile->data[elfFile->programHeader_offset + i * elfFile->programHeader_size + j];
+        }
         ProgramHeader *programHeader = malloc(sizeof(ProgramHeader));
         load_programmHeader(programHeaderData, programHeader);
         elfFile->programHeaders[i] = *programHeader;

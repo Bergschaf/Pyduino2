@@ -20,10 +20,12 @@ void load_elf_executable(char *filename, Cpu *cpu) {
         cpu->regs[i] = 0;
     }
 
-
     for (int i = 0; i < file->programHeader_num; i++) {
         ProgramHeader *programHeader = &file->programHeaders[i];
         if (programHeader->type == 1) {
+            printf("va: 0x%lx\n", programHeader->vaddr);
+            printf("size: 0x%lx\n", programHeader->fileSize);
+            printf("offset: 0x%lx\n", programHeader->offset);
             for (int j = 0; j < programHeader->fileSize; j++) {
                 cpu->mem[programHeader->vaddr + j] = file->data[programHeader->offset + j];
             }
@@ -63,6 +65,9 @@ void run_next(Cpu *cpu) {
     }
     if (LOG_LEVEL == 0) {
         print_human_debug(cpu);
+    }
+    else if (LOG_LEVEL == 1) {
+        printf("PC: 0x%lx\n", cpu->pc);
     }
 
 

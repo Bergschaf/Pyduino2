@@ -2,7 +2,7 @@ import numpy as np
 
 class Memory:
     def __init__(self, size):
-        self.start_adress = -1000 # TODO nicht so gut
+        self.start_adress = 0 # TODO nicht so gut
         self.size = size
         self.last_address = size
         self.memory = np.zeros(size, dtype=np.uint8)

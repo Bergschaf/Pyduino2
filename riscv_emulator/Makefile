@@ -5,11 +5,14 @@ CFLAGS=-Wall -Wextra  -pedantic -g -rdynamic
 all: main debug
 
 
-main: main.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o
+main: main.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o config.h
 	$(CC) $(CFLAGS)  main.c cpu.o util.o elfLoader.o instructions.o decoder.o kernel.o  -o main
 
-debug: debug.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o
+debug: debug.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o config.h
 	$(CC) $(CFLAGS) debug.c cpu.o util.o elfLoader.o instructions.o decoder.o kernel.o  -o debug
+
+debug_elfLoader: debug_elfLoader.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o config.h
+	$(CC) $(CFLAGS) debug_elfLoader.c cpu.o util.o elfLoader.o instructions.o decoder.o kernel.o  -o debug_elfLoader
 
 elfLoader.o: elfLoader.c
 	$(CC) $(CFLAGS) -c elfLoader.c

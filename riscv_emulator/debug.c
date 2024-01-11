@@ -7,16 +7,16 @@
 
 
 int main(){
-    Cpu cpu;
-    load_elf_executable("test", &cpu);
+    Cpu *cpu = malloc(sizeof(Cpu));
+    load_elf_executable("test", cpu);
     while (1) {
         int old_stdout = dup(fileno(stdout));
         freopen ("/dev/null", "w", stdout);
-        run_next(&cpu);
+        run_next(cpu);
         fflush(stdout);
         fclose(stdout);
         stdout = fdopen(old_stdout, "w");
-        print_debug(&cpu);
+        print_debug(cpu);
         fflush(stdout);
         // wait for stdin
         char c = getchar();
