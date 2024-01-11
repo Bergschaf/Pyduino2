@@ -12,7 +12,7 @@
 
 struct instruction_callback {
     execute_instruction func;
-    Instruction inst;
+    Instruction *inst;
 };
 typedef struct instruction_callback InstructionCallback;
 

@@ -47,6 +47,7 @@ int64_t sys_writev(Cpu *cpu, int64_t arg0, int64_t addr, int64_t count, int64_t 
         printf("%s", str);
         printf("\033[0m");
         res += len;
+        free(str);
     }
     return res;
 }

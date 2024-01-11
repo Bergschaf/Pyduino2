@@ -54,12 +54,12 @@ void run_next(Cpu *cpu) {
     if (LOG_LEVEL == 0) {
         char **syms = backtrace_symbols(&funprt, 1);
         printf("%s\n", syms[0]);
-        print_Instruction(callback.inst);
+        print_Instruction(*callback.inst);
     }
     // print stack pointer
     // print registers
     int64_t prev_pc = cpu->pc;
-    callback.func(cpu, callback.inst);
+    callback.func(cpu, *callback.inst);
     cpu->regs[0] = 0; // TODO may be very broken
     if (cpu->pc == prev_pc) {
         cpu->pc += 4;
@@ -71,7 +71,7 @@ void run_next(Cpu *cpu) {
         printf("PC: 0x%lx\n", cpu->pc);
     }
 
-
+    free(callback.inst);
 }
 
 void print_human_debug(Cpu *cpu) {
