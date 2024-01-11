@@ -99,12 +99,13 @@ class Kernel:
         # sys_uname
         size = 65
         fillchar = "0"
+
         kernel.memory.puts(int_from_bin(a0), "Linux".ljust(size - 1, fillchar) + "\x00")
-        kernel.memory.puts(int_from_bin(a0) + size * 1, "".ljust(size - 1, fillchar) + "\x00")
+        kernel.memory.puts(int_from_bin(a0) + size * 1, "u".ljust(size - 1, fillchar) + "\x00")
         kernel.memory.puts(int_from_bin(a0) + size * 2, "6.6.8".ljust(size - 1, fillchar) + "\x00")
-        kernel.memory.puts(int_from_bin(a0) + size * 3, "".ljust(size - 1, fillchar) + "\x00")
+        kernel.memory.puts(int_from_bin(a0) + size * 3, "u".ljust(size - 1, fillchar) + "\x00")
         kernel.memory.puts(int_from_bin(a0) + size * 4, "riscv64".ljust(size - 1, fillchar) + "\x00")
-        kernel.memory.puts(int_from_bin(a0) + size * 5, "".ljust(size - 1, fillchar) + "\x00")
+        kernel.memory.puts(int_from_bin(a0) + size * 5, "u".ljust(size - 1, fillchar) + "\x00")
         return 0  # TODO Change
 
     @staticmethod

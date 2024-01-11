@@ -7,8 +7,8 @@
 
 
 int main() {
-    Cpu cpu;
-    load_elf_executable("test", &cpu);
-    run(&cpu);
+    Cpu *cpu = malloc(sizeof(Cpu));
+    load_elf_executable("test", cpu);
+    run(cpu);
     return 43;
 }

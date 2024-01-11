@@ -5,8 +5,6 @@
 #include "instructions.h"
 
 
-
-
 Instruction decode_UType(uint32_t bin_inst) {
     struct Instruction *utype = malloc(sizeof(Instruction));
     utype->type = 4;
@@ -150,7 +148,7 @@ void execute_auipc(Cpu *cpu, Instruction inst) {
 
 void execute_jal(Cpu *cpu, Instruction inst) {
     // J-Type
-    cpu->regs[inst.rd] = cpu->pc;
+    cpu->regs[inst.rd] = cpu->pc + 4;
     cpu->pc += inst.imm;
 }
 
@@ -222,6 +220,7 @@ void execute_lw(Cpu *cpu, Instruction inst) {
 
 void execute_lbu(Cpu *cpu, Instruction inst) {
     // I-Type
+    printf("lbu: 0x%lx\n", cpu->regs[inst.rs1] + inst.imm);
     cpu->regs[inst.rd] = cpu->mem[cpu->regs[inst.rs1] + inst.imm];
 }
 
@@ -233,9 +232,9 @@ void execute_lhu(Cpu *cpu, Instruction inst) {
 void execute_sb(Cpu *cpu, Instruction inst) {
     // S-Type
     // print imm and rs1
-    printf("imm: %lx\n", inst.imm);
-    printf("rs1: %lx\n", cpu->regs[inst.rs1]);
-    printf("SB: %lx\n", cpu->regs[inst.rs1] + inst.imm);
+    //printf("imm: %lx\n", inst.imm);
+    //printf("rs1: %lx\n", cpu->regs[inst.rs1]);
+    //printf("SB: %lx\n", cpu->regs[inst.rs1] + inst.imm);
     cpu->mem[cpu->regs[inst.rs1] + inst.imm] = cpu->regs[inst.rs2] & 0xFF;
 }
 

@@ -49,7 +49,8 @@ void run_next(Cpu *cpu) {
     // print the name of the function
     void *funprt = callback.func;
     if (LOG_LEVEL == 0) {
-        backtrace_symbols_fd(&funprt, 1, 1);
+        char **syms = backtrace_symbols(&funprt, 1);
+        printf("%s\n", syms[0]);
         print_Instruction(callback.inst);
     }
     // print stack pointer
@@ -60,34 +61,61 @@ void run_next(Cpu *cpu) {
     if (cpu->pc == prev_pc) {
         cpu->pc += 4;
     }
-    if (LOG_LEVEL <= 1) {
-        printf("PC: %lx\n", cpu->pc - 4);
-    }
     if (LOG_LEVEL == 0) {
-        print_registers(cpu);
-        printf("\n\n");
+        print_human_debug(cpu);
     }
 
 
 }
 
+void print_human_debug(Cpu *cpu) {
+    printf("PC: 0x%lx\n", cpu->pc);
+    print_registers(cpu);
+    printf("end\n\n");
+}
 
 void print_debug(Cpu *cpu) {
     printf("PC: 0x%lx\n", cpu->pc);
-    print_registers(cpu);
+    for (int i = 0; i < 32; i++) {
+        printf("%d: 0x%lx\n", i, cpu->regs[i]);
+    }
     printf("end\n");
 }
 
 void run(Cpu *cpu) {
+    // stop and ask for input after 1000 instructions
+    int i = 0;
     while (cpu->pc < MEM_SIZE) {
         run_next(cpu);
+        i++;
+        if (i > 10000) {
+            break;
+        }
     }
 }
 
 void print_registers(Cpu *cpu) {
     for (int i = 0; i < 32; i++) {
-        printf("%d: 0x%lx\n", i, cpu->regs[i]);
+        printf("%d: 0x%lx (%s)\n", i, cpu->regs[i], reg_names[i]);
     }
+}
+
+void memory_puts(Cpu *cpu, int64_t address, char *string) {
+    int i = 0;
+    while (string[i] != '\0') {
+        cpu->mem[address + i] = string[i];
+        i++;
+    }
+    cpu->mem[address + i] = '\0';
+}
+
+void memory_loads(Cpu *cpu, int64_t address, char *string) {
+    int i = 0;
+    while (cpu->mem[address + i] != '\0') {
+        string[i] =(char)cpu->mem[address + i];
+        i++;
+    }
+    string[i] = '\0';
 }
 
 

@@ -23,6 +23,7 @@ def run_debugger():
         out.append(p.stdout.readline())
         if out[-1] == b'end\n':
             res = {}
+            print(out)
             res["PC"] = get_value(out[0])
             out = out[1:-1]
             for i in range(32):

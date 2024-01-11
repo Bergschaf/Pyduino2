@@ -15,7 +15,7 @@ def init(file):
     to_load = elf.get_program_data()
 
     # load the Segments specified in the program headers
-    memory_size = 1000000  # last segment's virtual address + size
+    memory_size = 10000000  # last segment's virtual address + size
     memory = Memory(memory_size)
     memory.start_adress = 0 # TODO
 

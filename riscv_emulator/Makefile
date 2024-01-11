@@ -2,7 +2,7 @@ CROSS=
 CC=gcc
 CFLAGS=-Wall -Wextra  -pedantic -g -rdynamic
 
-all: main
+all: main debug
 
 
 main: main.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o

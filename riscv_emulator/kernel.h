@@ -8,6 +8,6 @@
 #include "util.h"
 #include "cpu.h"
 
-int64_t do_syscall(Cpu *cpu);
+void do_syscall(Cpu *cpu);
 
 #endif //RISCV_EMULATOR_KERNEL_H

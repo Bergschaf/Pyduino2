@@ -20,6 +20,10 @@ struct cpu {
 };
 typedef struct cpu Cpu;
 
+void memory_puts(Cpu *cpu, int64_t address, char *string);
+
+void memory_loads(Cpu *cpu, int64_t address, char *string);
+
 void load_elf_executable(char *filename, Cpu *cpu);
 
 uint64_t get_next_inst(Cpu *cpu);
@@ -29,6 +33,8 @@ void run(Cpu *cpu);
 void run_next(Cpu *cpu);
 
 void print_registers(Cpu *cpu);
+
+void print_human_debug(Cpu *cpu);
 
 void print_debug(Cpu *cpu);
 
