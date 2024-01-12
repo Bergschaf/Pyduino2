@@ -89,7 +89,7 @@ class ELF_File: # TODO interpret everything as twos complement
                 raise Exception("Invalid ELF file")
 
             # Check if little-endian or big-endian
-            if f[5] == 1:
+            if f[5] == 1:#
                 self.endian = "little"
             elif f[5] == 2:
                 self.endian = "big"

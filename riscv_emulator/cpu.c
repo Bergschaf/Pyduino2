@@ -94,9 +94,9 @@ void run(Cpu *cpu) {
     while (cpu->pc < MEM_SIZE) {
         run_next(cpu);
         i++;
-        if (i > 100000) {
-            break;
-        }
+        //if (i > 100000) {
+        //    break;
+        //}
     }
 }
 
@@ -115,13 +115,11 @@ void memory_puts(Cpu *cpu, int64_t address, char *string) {
     cpu->mem[address + i] = '\0';
 }
 
-void memory_loads(Cpu *cpu, int64_t address, char *string) {
-    int i = 0;
-    while (cpu->mem[address + i] != '\0') {
-        string[i] =(char)cpu->mem[address + i];
-        i++;
+void memory_loads(Cpu *cpu, int64_t address, char *string, int64_t size) {
+    for (int i = 0; i < size; ++i) {
+        string[i] = cpu->mem[address + i];
     }
-    string[i] = '\0';
+    string[size-1] = '\0';
 }
 
 

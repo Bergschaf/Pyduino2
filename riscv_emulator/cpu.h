@@ -22,7 +22,7 @@ typedef struct cpu Cpu;
 
 void memory_puts(Cpu *cpu, int64_t address, char *string);
 
-void memory_loads(Cpu *cpu, int64_t address, char *string);
+void memory_loads(Cpu *cpu, int64_t address, char *string, int64_t size);
 
 int64_t memory_loadw(Cpu *cpu, int64_t address);
 

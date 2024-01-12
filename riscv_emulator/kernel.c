@@ -40,8 +40,9 @@ int64_t sys_writev(Cpu *cpu, int64_t arg0, int64_t addr, int64_t count, int64_t 
     for (int i = 0; i < count; ++i) {
         int64_t base = memory_loadw(cpu, addr + i * 16);
         int64_t len = memory_loadw(cpu, addr + i * 16 + 8);
-        char *str = malloc(len + 1);
-        memory_loads(cpu, base, str);
+        printf("base: %ld, len: %ld\n", base, len);
+        char *str = malloc(len);
+        memory_loads(cpu, base, str, len);
         // print colored
         printf("\033[0;32m");
         printf("%s", str);
