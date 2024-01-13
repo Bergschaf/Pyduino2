@@ -3,6 +3,9 @@
 //
 
 #include "serial.h"
+#include <stdio.h>
+#include <string.h>
+
 /*
 * usart.c
 *
@@ -35,8 +38,8 @@ uint8_t USART_ReceivePolling(void) {
 void USART_ReceiveBytes(uint8_t *DataBytes, int length) {
     // send the instruction byte, length must not be greater than 255
     const uint8_t instruction_byte = 0x02;
-    USART_TransmitPolling(&instruction_byte,1);
-    USART_TransmitPolling(&length,1);
+    USART_TransmitPolling(&instruction_byte, 1);
+    USART_TransmitPolling(&length, 1);
     for (int i = 0; i < length; ++i) {
         DataBytes[i] = USART_ReceivePolling();
     }
@@ -51,47 +54,58 @@ void USART_TransmitPolling(uint8_t *DataBytes, int length) {
 }
 
 
-void USART_WaitForByte(uint8_t Byte, int timeout_cycles) {
-    for (int i = 0; i < timeout_cycles; ++i) {
-        if ((UCSR0A & (1 << RXC0)) == 1){
-            if (UDR0 == Byte){
-                return;
-            }
+int USART_WaitForByte(uint8_t Byte, int timeout_cycles) {
+    int i = 0;
+    while ((UCSR0A & (1 << RXC0)) == 0) {
+        if (i++ > timeout_cycles) {
+            return 0;
         }
     }
+    if (UDR0 == Byte) {
+            return 1;
+    }
+    return 0;
 }
+
 
 void USART_WaitForByteInfinite(uint8_t Byte) {
-    while (1){
-        if ((UCSR0A & (1 << RXC0)) == 1){
-            if (UDR0 == Byte){
-                return;
-            }
+    while (1) {
+        while ((UCSR0A & (1 << RXC0)) == 0) {};
+        if (UDR0 == Byte) {
+            return;
         }
     }
 }
 
-void do_serial_print(char* string, int length) {
+
+void serial_printf(const char *format, ...) {
+    // TODO very bad if the string is longer than 255 bytes
+
     // transmit the instruction byte
     const uint8_t instruction_byte = 0x01;
     USART_TransmitPolling(&instruction_byte, 1);
-    int offset = 0;
-    while(length >= 0){
-        uint8_t length_byte = length;
-        if (length > 255){
-            length_byte = 255;
-        }
-        USART_TransmitPolling(&length_byte, 1);
-        USART_TransmitPolling(string + offset, length_byte);
-        length -= 255;
-        offset += 255;
-    }
+
+    char buffer[256];
+    va_list args;
+    va_start(args, format);
+    vsprintf(buffer, format, args);
+    va_end(args);
+
+    uint8_t length = strlen(buffer);
+
+    // transmit the length
+    USART_TransmitPolling(&length, 1);
+
+    // transmit the string
+    USART_TransmitPolling((uint8_t *) buffer, length);
 }
 
-void first_handshake(void){
+void first_handshake(void) {
     const uint8_t handshake_byte = HANDSHAKE_BYTE;
-    while (1){
+    while (1) {
         USART_TransmitPolling(&handshake_byte, 1);
-        USART_WaitForByte(HANDSHAKE_ACK_BYTE, 1000);
+        if (USART_WaitForByte(HANDSHAKE_ACK_BYTE, 10000)){
+            break;
+        }
     }
 }

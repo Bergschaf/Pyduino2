@@ -14,8 +14,8 @@
 //#include <stdlib.h>
 
 struct ProgramHeader {
-    int type; // 1 for loadable segment
-    int flags; // 1 for executable, 2 for writable, 4 for readable
+    int32_t type; // 1 for loadable segment
+    int32_t flags; // 1 for executable, 2 for writable, 4 for readable
     int64_t offset; // offset of segment in file image
     int64_t vaddr; // virtual address of segment in memory
     int64_t paddr; // physical address of segment in memory
@@ -58,7 +58,6 @@ struct ElfFile {
     int sectionHeader_num; // number of entries in section header table
 
     ProgramHeader *programHeaders;
-    SectionHeader *sectionHeaders;
 };
 
 typedef struct ElfFile ElfFile;

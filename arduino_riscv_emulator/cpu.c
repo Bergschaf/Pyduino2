@@ -5,32 +5,21 @@
 #include "cpu.h"
 #include "decoder.h"
 #include "elfLoader.h"
+#include "serial.h"
+#include "memory.h"
 
 void load_elf_executable(char *filename, Cpu *cpu) {
     ElfFile *file = malloc(sizeof(ElfFile));
     receive_elf_file(file);
     cpu->pc = file->entry_pos;
-    // initialize the memory with 0
-    for (int i = 0; i < MEM_SIZE; i++) {
-        cpu->mem[i] = 0;
-    }
+    // initialize the memory with 0 TODO
+
     // initialize the registers with 0
     for (int i = 0; i < 32; i++) {
         cpu->regs[i] = 0;
     }
 
-    for (int i = 0; i < file->programHeader_num; i++) {
-        ProgramHeader *programHeader = &file->programHeaders[i];
-        if (programHeader->type == 1) {
-            //printf("va: 0x%lx\n", programHeader->vaddr);
-            //printf("size: 0x%lx\n", programHeader->fileSize);
-            //printf("offset: 0x%lx\n", programHeader->offset);
-            for (int j = 0; j < programHeader->fileSize; j++) {
-                cpu->mem[programHeader->vaddr + j] = file->data[programHeader->offset + j];
-            }
-        }
-    }
-    free(file->data);
+
     free(file);
     // Set sp to the end of the memory
     cpu->regs[2] = MEM_SIZE - 1000;
@@ -67,7 +56,7 @@ void run_next(Cpu *cpu) {
         print_human_debug(cpu);
     }
     else if (LOG_LEVEL == 1) {
-        printf("PC: 0x%lx\n", cpu->pc);
+        serial_printf("PC: 0x%lx\n", cpu->pc);
     }
 
     free(callback.inst);
@@ -115,28 +104,28 @@ void memory_puts(Cpu *cpu, int64_t address, char *string) {
 }
 
 void memory_loads(Cpu *cpu, int64_t address, char *string, int64_t size) {
-    for (int i = 0; i < size; ++i) {
-        string[i] = cpu->mem[address + i];
-    }
-    string[size-1] = '\0';
+    memory_load(address, string, size);
 }
 
 
 int64_t memory_loadw(Cpu *cpu, int64_t address) {
+    uint8_t bytes[4];
+    memory_load(address, bytes, 4);
     int64_t res = 0;
     for (int i = 0; i < 4; i++) {
-        res |= cpu->mem[address + i] << (8 * i);
+        res |= bytes[i] << (8 * i);
     }
     return res;
 }
 
 
 int64_t memory_loaddw(Cpu *cpu, int64_t address) {
+    uint8_t bytes[8];
+    memory_load(address, bytes, 8);
     int64_t res = 0;
     for (int i = 0; i < 8; i++) {
-        res |= cpu->mem[address + i] << (8 * i);
+        res |= bytes[i] << (8 * i);
     }
     return res;
 }
-
 

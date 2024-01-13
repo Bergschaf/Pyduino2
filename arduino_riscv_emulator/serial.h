@@ -9,7 +9,7 @@
 
 #include <avr/io.h>      // Contains all the I/O Register Macros
 
-#define USART_BAUDRATE 9600 // Desired Baud Rate
+#define USART_BAUDRATE 460800 	 // Desired Baud Rate
 #define BAUD_PRESCALER (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
 
 #define ASYNCHRONOUS (0<<UMSEL00) // USART Mode Selection
@@ -32,8 +32,10 @@
 #define HANDSHAKE_BYTE 0x42
 #define HANDSHAKE_ACK_BYTE 0x23
 
-#define ELF_FILE_START_BYTE 0x01
-#define ELF_FILE_ACK_BYTE 0x02
+#define ELF_FILE_START_BYTE 0x10
+#define ELF_FILE_ACK_BYTE 0x20
+
+#define CHUNK_SIZE 64
 
 void USART_Init(void);
 
@@ -43,9 +45,9 @@ void USART_ReceiveBytes(uint8_t *DataBytes, int length);
 
 void USART_TransmitPolling(uint8_t *DataBytes, int length);
 
-void do_serial_print(char* string, int length);
+void serial_printf(const char *format, ...);
 
-void USART_WaitForByte(uint8_t Byte, int timeout_cycles);
+int USART_WaitForByte(uint8_t Byte, int timeout_cycles);
 
 void USART_WaitForByteInfinite(uint8_t Byte);
 

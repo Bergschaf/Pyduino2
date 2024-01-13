@@ -8,23 +8,95 @@
 using namespace mn::CppLinuxSerial;
 using namespace std;
 
-int decode_request(vector<uint8_t> bytes) {
-    if (bytes.size() <= 2) {
-        return 0;
+#include <thread>
+
+
+#define ELF_FILE_START_BYTE 0x10
+#define ELF_FILE_ACK_BYTE 0x20
+#define MEMORY_SIZE 100000000
+
+int to_send = 0;
+bool elf_start = false;
+uint8_t* memory = (uint8_t*) malloc(MEMORY_SIZE);
+
+
+void transmit_elf_file(string filename, SerialPort &serialPort){
+    FILE *file = fopen(filename.c_str(), "rb");
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    uint8_t *data = (uint8_t *) malloc(file_size);
+    fread(data, 1, file_size, file);
+    fclose(file);
+
+    // send elf file start byte
+    serialPort.WriteBinary({ELF_FILE_START_BYTE});
+    // wait for ack byte TODO make better
+    while (!elf_start) {}
+
+    printf("Sending header, file size: %ld\n", file_size);
+
+    while (1){
+        if(to_send > 0){
+            printf("Sending %d bytes\n", to_send);
+            serialPort.WriteBinary(vector<uint8_t>(data, data + to_send));
+            data += to_send;
+            to_send = 0;
+        }
     }
+}
+
+int decode_request(vector<uint8_t> bytes) {
     uint8_t first_byte = bytes[0];
     switch (first_byte) {
         case 0x01: {
             // print request
             uint8_t size_byte = bytes[1];
             // print the bytes colored
+            if (size_byte > bytes.size()){
+                return 0;
+            }
             printf("\033[1;31m");
             for (int i = 0; i < size_byte; ++i) {
                 printf("%c", bytes[i + 2]);
             }
             printf("\033[0m\n");
-            printf("Printed %d bytes\n", size_byte);
+            //printf("Printed %d bytes\n", size_byte);
             return size_byte + 2;
+        }
+        case 0x02: {
+            // elf requst
+            //printf("Length: %d\n", bytes[1]);
+            uint8_t size_byte = bytes[1];
+            to_send = size_byte;
+            return 2;
+        }
+
+        case 0x03: {
+            // write to memory
+            uint64_t address = 0;
+            for (int i = 0; i < 8; ++i) {
+                address |= bytes[i + 1] << (i * 8);
+            }
+            uint16_t length = 0;
+            length |= bytes[9] << 8;
+            length |= bytes[10];
+
+            if (length > bytes.size() - 11) {
+                return 0;
+            }
+            //printf("Address: %lx\n", address);
+            //printf("Length: %d\n", length);
+
+            for (int i = 0; i < length; ++i) {
+                memory[address + i] = bytes[i + 11];
+            }
+            return length + 11;
+        }
+
+        case ELF_FILE_ACK_BYTE: {
+            // elf file start byte
+            elf_start = true;
         }
 
         default: {
@@ -39,11 +111,11 @@ int decode_request(vector<uint8_t> bytes) {
     while (true) {
         if (serialPort.Available() > 0) {
             serialPort.ReadBinary(bytes);
-            printf("Read from serial port: %x | %ld\n", bytes[0], bytes.size());
+            //printf("Read from serial port: %x | %ld\n", bytes[0], bytes.size());
             while (bytes.size() > 0) {
-                printf("Read from serial port: %x | %ld\n", bytes[0], bytes.size());
+                //printf("Read from serial port: %x | %ld\n", bytes[0], bytes.size());
                 uint to_delete = decode_request(bytes);
-                printf("to_delete: %d\n", to_delete);
+                //printf("to_delete: %d\n", to_delete);
                 if(to_delete == 0){
                     break;
                 }
@@ -57,14 +129,51 @@ int decode_request(vector<uint8_t> bytes) {
     }
 }
 
+#define HANDSHAKE_RECEIVE_BYTE 0x42
+#define HANDSHAKE_SEND_BYTE 0x23
+
+void first_handshake(SerialPort &serialPort) {
+    // wait for handshake byte
+    while (true) {
+        if (serialPort.Available() > 0) {
+            vector<uint8_t> bytes;
+            serialPort.ReadBinary(bytes);
+            printf("Read from serial port: %x | %ld\n", bytes[0], bytes.size());
+            if (bytes[0] == HANDSHAKE_RECEIVE_BYTE) {
+                // send handshake byte
+                vector<uint8_t> handshake_send_byte = {HANDSHAKE_SEND_BYTE};
+                for (int i = 0; i < 1000; ++i) {
+                    serialPort.WriteBinary(handshake_send_byte);
+                }
+                return;
+            }
+            bytes = vector<uint8_t>();
+        }
+    }
+}
+
 int main() {
-    SerialPort serialPort("/dev/ttyACM0", BaudRate::B_9600, NumDataBits::EIGHT, Parity::NONE, NumStopBits::ONE);
+    SerialPort serialPort("/dev/ttyACM0", BaudRate::B_460800, NumDataBits::EIGHT, Parity::NONE, NumStopBits::ONE);
     serialPort.SetTimeout(0);
 
     serialPort.Open();
+    // sleep for 3 s
+    // intialize the memory with 0
+    for (int i = 0; i < MEMORY_SIZE; ++i) {
+        memory[i] = 0;
+    }
+
+    sleep(3);
+    first_handshake(serialPort);
+    // print colored
+    printf("\033[1;31m");
+    printf("Opened serial port\n");
+    printf("\033[0m\n");
     // delay 1s
-    usleep(3000000);
-    printf("Write to serial port\n");
+
+    // start thread that sends the elf file
+    thread t(transmit_elf_file, "/home/bergschaf/PycharmProjects/Pyduino2/serial_pc/test", ref(serialPort));
+
     listener(serialPort);
     serialPort.Close();
     return 0;

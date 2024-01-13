@@ -3,6 +3,7 @@
 //
 
 #include "kernel.h"
+#include "serial.h"
 // import usleep (arduino)
 
 int64_t sys_uname(Cpu *cpu, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
@@ -43,9 +44,9 @@ int64_t sys_writev(Cpu *cpu, int64_t arg0, int64_t addr, int64_t count, int64_t 
         char *str = malloc(len);
         memory_loads(cpu, base, str, len);
         // print colored
-        printf("\033[0;32m");
-        printf("%s", str);
-        printf("\033[0m");
+        serial_printf("\033[0;32m");
+        serial_printf("%s", str);
+        serial_printf("\033[0m");
         res += len;
         free(str);
     }
