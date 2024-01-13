@@ -9,9 +9,9 @@
 //
 // Created by bergschaf on 1/5/24.
 //
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 
 struct ProgramHeader {
     int type; // 1 for loadable segment
@@ -63,16 +63,14 @@ struct ElfFile {
 
 typedef struct ElfFile ElfFile;
 
-void load_elf_file(char *filename, ElfFile *elfFile);
 
 void load_programmHeader(uint8_t *data, ProgramHeader *programHeader);
 
 void load_sectionHeader(uint8_t *data, SectionHeader *sectionHeader);
 
-void print_programHeader(ProgramHeader *programHeader);
+void load_elf_header(ElfFile *elfFile, uint8_t* data);
 
-void print_sectionHeader(SectionHeader *sectionHeader);
+void receive_elf_file(ElfFile *elfFile);
 
-void print_elf_file(ElfFile *elfFile);
 
 #endif //RISCV_EMULATOR_ELFLOADER_H

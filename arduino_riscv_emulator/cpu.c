@@ -4,12 +4,11 @@
 
 #include "cpu.h"
 #include "decoder.h"
-#include <execinfo.h>
-
+#include "elfLoader.h"
 
 void load_elf_executable(char *filename, Cpu *cpu) {
     ElfFile *file = malloc(sizeof(ElfFile));
-    load_elf_file(filename, file);
+    receive_elf_file(file);
     cpu->pc = file->entry_pos;
     // initialize the memory with 0
     for (int i = 0; i < MEM_SIZE; i++) {
@@ -52,9 +51,9 @@ void run_next(Cpu *cpu) {
     // print the name of the function
     void *funprt = callback.func;
     if (LOG_LEVEL == 0) {
-        char **syms = backtrace_symbols(&funprt, 1);
-        printf("%s\n", syms[0]);
-        print_Instruction(*callback.inst);
+        //char **syms = backtrace_symbols(&funprt, 1);
+        //printf("%s\n", syms[0]);
+        //print_Instruction(*callback.inst);
     }
     // print stack pointer
     // print registers

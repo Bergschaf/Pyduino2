@@ -6,7 +6,6 @@
 #define RISCV_EMULATOR_INSTRUCTIONS_H
 
 #include <stdint.h>
-#include <stdio.h>
 #include "config.h"
 #include "cpu.h"
 #include "kernel.h"

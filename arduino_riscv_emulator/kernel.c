@@ -3,8 +3,7 @@
 //
 
 #include "kernel.h"
-// import usleep
-#include <unistd.h>
+// import usleep (arduino)
 
 int64_t sys_uname(Cpu *cpu, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
     int size = 65;
@@ -62,7 +61,7 @@ int64_t sys_nanosleep(Cpu *cpu, int64_t arg0, int64_t arg1, int64_t arg2, int64_
         printf("\033[0m");
     }
     // sleep
-    usleep(sleep);
+    //_delay_ms(sleep); // TODO
     return 0;
 }
 

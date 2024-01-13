@@ -73,7 +73,7 @@ Instruction *decode_RType(uint32_t bin_inst) {
     return rtype;
 }
 
-
+/*
 void print_UType(Instruction utype) {
     printf("UType:\n rd: %s\n imm: %lx | %ld\n", reg_names[utype.rd], utype.imm, utype.imm);
 }
@@ -134,7 +134,7 @@ void print_Instruction(Instruction inst) {
             exit(1409);
         }
     }
-}
+}*/
 
 void execute_lui(Cpu *cpu, Instruction inst) {
     // U-Type

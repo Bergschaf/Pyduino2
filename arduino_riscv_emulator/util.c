@@ -1,8 +1,7 @@
 //
 // Created by bergschaf on 1/5/24.
 //
-#include <stdio.h>
-#include <stdint.h>
+
 #include "config.h"
 #include "util.h"
 

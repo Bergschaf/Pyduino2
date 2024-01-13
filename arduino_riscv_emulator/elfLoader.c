@@ -2,6 +2,9 @@
 // Created by bergschaf on 1/5/24.
 //
 #include "elfLoader.h"
+#include "serial.h"
+#include <stdlib.h>
+
 
 
 void load_programmHeader(uint8_t *data, ProgramHeader *programHeader) {
@@ -46,7 +49,7 @@ void load_programmHeader(uint8_t *data, ProgramHeader *programHeader) {
 }
 
 
-void load_sectionHeader(uint8_t *data, SectionHeader *sectionHeader) {
+void load_sectionHeader(uint8_t *data, SectionHeader *sectionHeader) {/*
     // Size: 64 bytes
     exit(69); // TODO falsch
     // Check name
@@ -90,176 +93,94 @@ void load_sectionHeader(uint8_t *data, SectionHeader *sectionHeader) {
     sectionHeader->entrySize =
             (int64_t) data[63] << 56 | (int64_t) data[62] << 48 | (int64_t) data[61] << 40 | (int64_t) data[60] << 32 |
             data[59] << 24 | data[58] << 16 | data[57] << 8 | data[56];
+*/
+}
+
+
+
+void receive_elf_file(ElfFile *elfFile) {
+    // Wait for the handshake byte
+    USART_WaitForByteInfinite(ELF_FILE_START_BYTE);
+    // send elf file ack byte
+    const uint8_t ack_byte = ELF_FILE_ACK_BYTE;
+    USART_TransmitPolling(&ack_byte, 1);
+
+    uint8_t header[64];
+    USART_ReceiveBytes(header, 64);
+
+    load_elf_header(elfFile, header);
+
+    // load program headers
+    elfFile->programHeaders = malloc(sizeof(ProgramHeader) * elfFile->programHeader_num);
+
+    for (int i = 0; i < elfFile->programHeader_num; i++) {
+        uint8_t programHeaderData[56];
+        USART_ReceiveBytes(programHeaderData, 56);
+        load_programmHeader(programHeaderData, &elfFile->programHeaders[i]);
+    }
+
+
 
 }
 
-// rewrite load_sectionHeader and load_programHeader to use little endian
-// This means that the bytes are read in reverse order (the higher bytes are shifted to the left)
 
-
-void load_elf_file(char *filename, ElfFile *elfFile) {
-    FILE *file = fopen(filename, "rb");
-    if (file == NULL) {
-        printf("Error opening file\n");
-        exit(4242);
-    }
-    elfFile->filename = filename;
-
-    // Load data
-    fseek(file, 0, SEEK_END);
-    long size = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    printf("Size: %ld\n", size);
-    elfFile->data = malloc(size);
-    fread(elfFile->data, 1, size, file);
-    //for (int i = 0; i < size; ++i) {
-    //    printf("%x\n", elfFile->data[i]);
-    //}
-
-    // Read header
-    uint8_t *header = malloc(64);
-    for (int i = 0; i < 64; ++i) {
-        header[i] = elfFile->data[i];
-    }
-
+void load_elf_header(ElfFile *elfFile, uint8_t *data) {
     // Check magic number
     // TODO
 
     // Check architecture
-    elfFile->arch = header[4];
+    elfFile->arch = data[4];
     if (elfFile->arch != 2) {
-        printf("Only 64 bit Arch supported\n");
-        exit(4242);
+        do_serial_print("Only 64 bit Arch supported\n", 27);
     }
 
     // Check endianness
-    elfFile->endianness = header[5];
+    elfFile->endianness = data[5];
     if (elfFile->endianness != 1) {
-        printf("Only little endianness supported\n");
-        exit(4242);
+        do_serial_print("Only little endianness supported\n", 33);
     }
 
     // Check type at 16 to 18
-    elfFile->type = header[17] << 8 | header[16];
+    elfFile->type = data[17] << 8 | data[16];
 
     // Check instruction set (byteorder little endian) (18 to 19)
-    elfFile->instructionSet = header[19] << 8 | header[18];
-    printf("%x\n", header[19]);
+    elfFile->instructionSet = data[19] << 8 | data[18];
     if (elfFile->instructionSet != 0xF3) {
-        printf("Only RISC-V instruction set supported\n");
-        exit(4242);
+        do_serial_print("Only RISC-V instruction set supported\n", 39);
     }
 
     // Check entry point (64 bit) TODO maybe not correct
-    elfFile->entry_pos = ((int64_t) header[31]) << 56 | (int64_t) header[30] << 48 | (int64_t) header[29] << 40 |
-                         (int64_t) header[28] << 32 | header[27] << 24 | header[26] << 16 | header[25] << 8 |
-                         header[24];
+    elfFile->entry_pos = ((int64_t) data[31]) << 56 | (int64_t) data[30] << 48 | (int64_t) data[29] << 40 |
+                         (int64_t) data[28] << 32 | (int64_t) data[27] << 24 | (int64_t) data[26] << 16 |
+                         (int64_t) data[25] << 8 |
+                         (int64_t) data[24];
 
     // Check program header offset
     elfFile->programHeader_offset =
-            (int64_t) header[39] << 56 | (int64_t) header[38] << 48 | (int64_t) header[37] << 40 |
-            (int64_t) header[36] << 32 | header[35] << 24 | header[34] << 16 | header[33] << 8 | header[32];
+            (int64_t) data[39] << 56 | (int64_t) data[38] << 48 | (int64_t) data[37] << 40 |
+            (int64_t) data[36] << 32 | (int64_t) data[35] << 24 | (int64_t) data[34] << 16 | (int64_t) data[33] << 8 |
+            (int64_t) data[32];
 
     // Check section header offset
     elfFile->sectionHeader_offset =
-            (int64_t) header[47] << 56 | (int64_t) header[46] << 48 | (int64_t) header[45] << 40 |
-            (int64_t) header[44] << 32 | header[43] << 24 | header[42] << 16 | header[41] << 8 | header[40];
+            (int64_t) data[47] << 56 | (int64_t) data[46] << 48 | (int64_t) data[45] << 40 |
+            (int64_t) data[44] << 32 | (int64_t) data[43] << 24 | (int64_t) data[42] << 16 | (int64_t) data[41] << 8 |
+            (int64_t) data[40];
 
     // Check header size (52 to 55)
-    elfFile->header_size = header[53] << 8 | header[52];
+    elfFile->header_size = data[53] << 8 | data[52];
 
     // Check program header entry size (16 bit)
-    elfFile->programHeader_size = header[55] << 8 | header[54];
+    elfFile->programHeader_size = data[55] << 8 | data[54];
 
     // Check number of program header entries (16 bit)
-    elfFile->programHeader_num = header[57] << 8 | header[56];
+    elfFile->programHeader_num = data[57] << 8 | data[56];
 
     // Check section header entry size (16 bit)
-    elfFile->sectionHeader_size = header[59] << 8 | header[58];
+    elfFile->sectionHeader_size = data[59] << 8 | data[58];
 
     // Check number of section header entries (16 bit)
-    elfFile->sectionHeader_num = header[61] << 8 | header[60];
-
-    // Free the memory of the header
-    free(header);
-
-    // Read program header table
-    elfFile->programHeaders = malloc(sizeof(ProgramHeader) * elfFile->programHeader_num);
-
-    for (int i = 0; i < elfFile->programHeader_num; i++) {
-        uint8_t *programHeaderData = malloc(elfFile->programHeader_size);
-        for (int j = 0; j < elfFile->programHeader_size; ++j) {
-            programHeaderData[j] = elfFile->data[elfFile->programHeader_offset + i * elfFile->programHeader_size + j];
-        }
-        ProgramHeader *programHeader = malloc(sizeof(ProgramHeader));
-        load_programmHeader(programHeaderData, programHeader);
-        elfFile->programHeaders[i] = *programHeader;
-    }
-
-    /*
-    elfFile->sectionHeaders = malloc(sizeof(SectionHeader) * elfFile->sectionHeader_num);
-    // Read section header table
-    for (int i = 0; i < elfFile->sectionHeader_num; i++) {
-        uint8_t *sectionHeaderData = malloc(64);
-        fread(sectionHeaderData, 1, 64, file);
-        SectionHeader *sectionHeader = malloc(sizeof(SectionHeader));
-        load_sectionHeader(sectionHeaderData, sectionHeader);
-        elfFile->sectionHeaders[i] = *sectionHeader;
-    }*/
-}
-
-void print_programHeader(ProgramHeader *programHeader) {
-    printf("ProgramHeader:\n type: %x\n flags: %x\n offset: %lx\n vaddr: %lx\n paddr: %lx\n fileSize: %lx\n memSize: %lx\n align: %lx\n",
-           programHeader->type,
-           programHeader->flags,
-           programHeader->offset,
-           programHeader->vaddr,
-           programHeader->paddr,
-           programHeader->fileSize,
-           programHeader->memSize,
-           programHeader->align);
+    elfFile->sectionHeader_num = data[61] << 8 | data[60];
 
 }
-
-void print_sectionHeader(SectionHeader *sectionHeader) {
-    printf("SectionHeader:\n name: %x\n type: %x\n flags: %lx\n addr: %lx\n offset: %lx\n size: %lx\n link: %x\n info: %x\n align: %lx\n entrySize: %lx\n",
-           sectionHeader->name,
-           sectionHeader->type,
-           sectionHeader->flags,
-           sectionHeader->addr,
-           sectionHeader->offset,
-           sectionHeader->size,
-           sectionHeader->link,
-           sectionHeader->info,
-           sectionHeader->align,
-           sectionHeader->entrySize);
-}
-
-void print_elf_file(ElfFile *elfFile) {
-    printf("ElfFile:\n filename: %s\n arch: %d\n endianness: %d\n type: %d\n instructionSet: %d\n entry_pos: %lx\n programHeader_offset: %ld\n sectionHeader_offset: %ld\n header_size: %d\n programHeader_size: %d\n programHeader_num: %d\n sectionHeader_size: %d\n sectionHeader_num: %d\n",
-           elfFile->filename,
-           elfFile->arch,
-           elfFile->endianness,
-           elfFile->type,
-           elfFile->instructionSet,
-           elfFile->entry_pos,
-           elfFile->programHeader_offset,
-           elfFile->sectionHeader_offset,
-           elfFile->header_size,
-           elfFile->programHeader_size,
-           elfFile->programHeader_num,
-           elfFile->sectionHeader_size,
-           elfFile->sectionHeader_num);
-    for (int i = 0; i < elfFile->programHeader_num; ++i) {
-        print_programHeader(&elfFile->programHeaders[i]);
-    }
-
-    //for (int i = 0; i < elfFile->sectionHeader_num; ++i) {
-    //    print_sectionHeader(&elfFile->sectionHeaders[i]);
-    //}
-}
-
-
-// rewrite load_elf_file, load_programHeader, load_sectionHeader to use little endian
-// This means that the bytes are read in reverse order (the higher bytes are shifted to the left)
 
