@@ -3,6 +3,8 @@
 //
 
 #include "instructions.h"
+#include "serial.h"
+#include "memory.h"
 
 
 Instruction *decode_UType(uint32_t bin_inst) {
@@ -13,7 +15,7 @@ Instruction *decode_UType(uint32_t bin_inst) {
     return utype;
 }
 
-Instruction* decode_JType(uint32_t bin_inst) {
+Instruction *decode_JType(uint32_t bin_inst) {
     struct Instruction *jtype = malloc(sizeof(Instruction));
     jtype->type = 5;
     jtype->rd = (bin_inst >> 7) & 0b11111;
@@ -202,33 +204,40 @@ void execute_bgeu(Cpu *cpu, Instruction inst) {
 
 void execute_lb(Cpu *cpu, Instruction inst) {
     // I-Type
-    cpu->regs[inst.rd] = sign_extend(cpu->mem[cpu->regs[inst.rs1] + inst.imm], 8);
+    uint8_t *byte;
+    memory_load(cpu->regs[inst.rs1] + inst.imm, byte, 1);
+    cpu->regs[inst.rd] = sign_extend(*byte, 8);
 }
 
 void execute_lh(Cpu *cpu, Instruction inst) {
     // I-Type
-    cpu->regs[inst.rd] = sign_extend(
-            (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm], 16);
+    uint8_t bytes[2];
+    memory_load(cpu->regs[inst.rs1] + inst.imm, bytes, 2);
+    cpu->regs[inst.rd] = sign_extend((bytes[1] << 8) | bytes[0], 16);
 }
+
 
 void execute_lw(Cpu *cpu, Instruction inst) {
     // I-Type
+    uint8_t bytes[4];
+    memory_load(cpu->regs[inst.rs1] + inst.imm, bytes, 4);
     cpu->regs[inst.rd] = sign_extend(
-            (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24) |
-            (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16) |
-            (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) |
-            cpu->mem[cpu->regs[inst.rs1] + inst.imm], 32);
+            ((int32_t) bytes[3] << 24) | ((int32_t) bytes[2] << 16) | (bytes[1] << 8) | bytes[0], 32);
+
 }
 
 void execute_lbu(Cpu *cpu, Instruction inst) {
     // I-Type
-    //printf("lbu: 0x%lx\n", cpu->regs[inst.rs1] + inst.imm);
-    cpu->regs[inst.rd] = cpu->mem[cpu->regs[inst.rs1] + inst.imm];
+    uint8_t *byte;
+    memory_load(cpu->regs[inst.rs1] + inst.imm, byte, 1);
+    cpu->regs[inst.rd] = *byte;
 }
 
 void execute_lhu(Cpu *cpu, Instruction inst) {
     // I-Type
-    cpu->regs[inst.rd] = (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) | cpu->mem[cpu->regs[inst.rs1] + inst.imm];
+    uint8_t bytes[2];
+    memory_load(cpu->regs[inst.rs1] + inst.imm, bytes, 2);
+    cpu->regs[inst.rd] = (bytes[1] << 8) | bytes[0];
 }
 
 void execute_sb(Cpu *cpu, Instruction inst) {
@@ -237,21 +246,25 @@ void execute_sb(Cpu *cpu, Instruction inst) {
     //printf("imm: %lx\n", inst.imm);
     //printf("rs1: %lx\n", cpu->regs[inst.rs1]);
     //printf("SB: %lx\n", cpu->regs[inst.rs1] + inst.imm);
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = cpu->regs[inst.rs2] & 0xFF;
+    memory_write(cpu->regs[inst.rs1] + inst.imm, (uint8_t *) &cpu->regs[inst.rs2], 1);
 }
 
 void execute_sh(Cpu *cpu, Instruction inst) {
     // S-Type
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = cpu->regs[inst.rs2] & 0xFF;
+    uint8_t *bytes[2];
+    bytes[0] = (uint8_t *) &cpu->regs[inst.rs2];
+    bytes[1] = (uint8_t *) &cpu->regs[inst.rs2] + 1;
+    memory_write(cpu->regs[inst.rs1] + inst.imm, bytes, 2);
 }
 
 void execute_sw(Cpu *cpu, Instruction inst) {
     // S-Type
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] = (cpu->regs[inst.rs2] >> 24) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] = (cpu->regs[inst.rs2] >> 16) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = cpu->regs[inst.rs2] & 0xFF;
+    uint8_t *bytes[4];
+    bytes[0] = (uint8_t *) &cpu->regs[inst.rs2];
+    bytes[1] = (uint8_t *) &cpu->regs[inst.rs2] + 1;
+    bytes[2] = (uint8_t *) &cpu->regs[inst.rs2] + 2;
+    bytes[3] = (uint8_t *) &cpu->regs[inst.rs2] + 3;
+    memory_write(cpu->regs[inst.rs1] + inst.imm, bytes, 4);
 }
 
 void execute_addi(Cpu *cpu, Instruction inst) {
@@ -363,10 +376,9 @@ void execute_ebreak(Cpu *cpu, Instruction inst) {
 
 void execute_lwu(Cpu *cpu, Instruction inst) {
     // I-Type
-    cpu->regs[inst.rd] =  (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24) |
-                          (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16) |
-                          (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) |
-                          cpu->mem[cpu->regs[inst.rs1] + inst.imm];
+    uint8_t bytes[4];
+    memory_load(cpu->regs[inst.rs1] + inst.imm, bytes, 4);
+    cpu->regs[inst.rd] = ((uint64_t)bytes[3] << 24) | ((uint64_t)bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
 }
 
 void execute_ld(Cpu *cpu, Instruction inst) {
@@ -394,26 +406,26 @@ void execute_ld(Cpu *cpu, Instruction inst) {
 
 
     // I-Type
-    cpu->regs[inst.rd] = ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 7] << 56) |
-                          ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 6] << 48) |
-                          ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 5] << 40) |
-                          ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 4] << 32) |
-                          ((int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24) |
-                          ((int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16) |
-                          ((int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) |
-                            (int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm];
+    uint8_t bytes[8];
+    memory_load(cpu->regs[inst.rs1] + inst.imm, bytes, 8);
+    cpu->regs[inst.rd] = sign_extend(
+            ((int64_t) bytes[7] << 56) | ((uint64_t) bytes[6] << 48) | ((uint64_t) bytes[5] << 40) |
+            ((uint64_t) bytes[4] << 32) | ((uint64_t) bytes[3] << 24) | ((uint64_t) bytes[2] << 16) |
+            ((uint64_t) bytes[1] << 8) | bytes[0], 64);
 }
 
 void execute_sd(Cpu *cpu, Instruction inst) {
     // S-Type
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 7] = (cpu->regs[inst.rs2] >> 56) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 6] = (cpu->regs[inst.rs2] >> 48) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 5] = (cpu->regs[inst.rs2] >> 40) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 4] = (cpu->regs[inst.rs2] >> 32) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] = (cpu->regs[inst.rs2] >> 24) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] = (cpu->regs[inst.rs2] >> 16) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] = (cpu->regs[inst.rs2] >> 8) & 0xFF;
-    cpu->mem[cpu->regs[inst.rs1] + inst.imm] = cpu->regs[inst.rs2] & 0xFF;
+    uint8_t *bytes[8];
+    bytes[0] = (uint8_t *) &cpu->regs[inst.rs2];
+    bytes[1] = (uint8_t *) &cpu->regs[inst.rs2] + 1;
+    bytes[2] = (uint8_t *) &cpu->regs[inst.rs2] + 2;
+    bytes[3] = (uint8_t *) &cpu->regs[inst.rs2] + 3;
+    bytes[4] = (uint8_t *) &cpu->regs[inst.rs2] + 4;
+    bytes[5] = (uint8_t *) &cpu->regs[inst.rs2] + 5;
+    bytes[6] = (uint8_t *) &cpu->regs[inst.rs2] + 6;
+    bytes[7] = (uint8_t *) &cpu->regs[inst.rs2] + 7;
+    memory_write(cpu->regs[inst.rs1] + inst.imm, bytes, 8);
 }
 
 void execute_addiw(Cpu *cpu, Instruction inst) {

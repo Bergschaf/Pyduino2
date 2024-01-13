@@ -187,7 +187,7 @@ void receive_elf_file(ElfFile *elfFile) {
         }
 
         while (size > 0) {
-            serial_printf("size: %uld\n", size);
+            //serial_printf("size: %uld\n", size);
             int chunk_size = CHUNK_SIZE;
             if (size < CHUNK_SIZE) {
                 chunk_size = size;

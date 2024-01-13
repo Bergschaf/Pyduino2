@@ -7,6 +7,7 @@
 #include "elfLoader.h"
 #include "serial.h"
 #include "memory.h"
+#include <string.h>
 
 void load_elf_executable(char *filename, Cpu *cpu) {
     ElfFile *file = malloc(sizeof(ElfFile));
@@ -26,9 +27,12 @@ void load_elf_executable(char *filename, Cpu *cpu) {
 }
 
 uint64_t get_next_inst(Cpu *cpu) {
+    uint8_t bytes[4];
+    memory_load(cpu->pc, bytes, 4);
+
     uint64_t inst = 0;
     for (int i = 0; i < 4; i++) {
-        inst |= cpu->mem[cpu->pc + i] << (8 * i);
+        inst |= bytes[i] << (8 * i);
     }
     return inst;
 }
@@ -36,6 +40,7 @@ uint64_t get_next_inst(Cpu *cpu) {
 
 void run_next(Cpu *cpu) {
     uint64_t inst = get_next_inst(cpu);
+    serial_printf("instruction: %x\n", inst);
     InstructionCallback callback = decode(inst);
     // print the name of the function
     void *funprt = callback.func;
@@ -63,9 +68,9 @@ void run_next(Cpu *cpu) {
 }
 
 void print_human_debug(Cpu *cpu) {
-    printf("PC: 0x%lx\n", cpu->pc);
+    serial_printf("PC: 0x%lx\n", cpu->pc);
     print_registers(cpu);
-    printf("end\n\n");
+    serial_printf("end\n\n");
 }
 
 void print_debug(Cpu *cpu) {
@@ -80,6 +85,7 @@ void run(Cpu *cpu) {
     // stop and ask for input after 1000 instructions
     int i = 0;
     while (cpu->pc < MEM_SIZE) {
+        serial_printf("PC: 0x%lx\n", cpu->pc);
         run_next(cpu);
         i++;
         //if (i > 100000) {
@@ -95,12 +101,7 @@ void print_registers(Cpu *cpu) {
 }
 
 void memory_puts(Cpu *cpu, int64_t address, char *string) {
-    int i = 0;
-    while (string[i] != '\0') {
-        cpu->mem[address + i] = string[i];
-        i++;
-    }
-    cpu->mem[address + i] = '\0';
+    memory_write(address, string, strlen(string));
 }
 
 void memory_loads(Cpu *cpu, int64_t address, char *string, int64_t size) {

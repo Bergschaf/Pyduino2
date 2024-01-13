@@ -17,10 +17,10 @@ using namespace std;
 
 int to_send = 0;
 bool elf_start = false;
-uint8_t* memory = (uint8_t*) malloc(MEMORY_SIZE);
+uint8_t *memory = (uint8_t *) malloc(MEMORY_SIZE);
 
 
-void transmit_elf_file(string filename, SerialPort &serialPort){
+void transmit_elf_file(string filename, SerialPort &serialPort) {
     FILE *file = fopen(filename.c_str(), "rb");
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
@@ -36,8 +36,8 @@ void transmit_elf_file(string filename, SerialPort &serialPort){
 
     printf("Sending header, file size: %ld\n", file_size);
 
-    while (1){
-        if(to_send > 0){
+    while (1) {
+        if (to_send > 0) {
             printf("Sending %d bytes\n", to_send);
             serialPort.WriteBinary(vector<uint8_t>(data, data + to_send));
             data += to_send;
@@ -46,14 +46,14 @@ void transmit_elf_file(string filename, SerialPort &serialPort){
     }
 }
 
-int decode_request(vector<uint8_t> bytes) {
+int decode_request(vector<uint8_t> bytes, SerialPort &serialPort) {
     uint8_t first_byte = bytes[0];
     switch (first_byte) {
         case 0x01: {
             // print request
             uint8_t size_byte = bytes[1];
             // print the bytes colored
-            if (size_byte > bytes.size()){
+            if (size_byte > bytes.size()) {
                 return 0;
             }
             printf("\033[1;31m");
@@ -93,6 +93,36 @@ int decode_request(vector<uint8_t> bytes) {
             }
             return length + 11;
         }
+        case 0x4: {
+            // read from memory
+            uint64_t address = 0;
+            for (int i = 0; i < 8; ++i) {
+                address |= bytes[i + 1] << (i * 8);
+            }
+            uint16_t length = 0;
+            length |= bytes[9] << 8;
+            length |= bytes[10];
+
+            if (bytes.size() < 10) {
+                return 0;
+            }
+
+
+            printf("Address: %lx\n", address);
+            printf("Length: %d\n", length);
+            // print all bytes
+            for (int i = 0; i < bytes.size(); ++i) {
+                printf("%x ", bytes[i]);
+            }
+            bytes = vector<uint8_t>(length);
+            for (int i = 0; i < length; ++i) {
+                bytes[i] = memory[address + i];
+            }
+            serialPort.WriteBinary({0x05});
+            serialPort.WriteBinary(bytes);
+            return 10;
+
+        }
 
         case ELF_FILE_ACK_BYTE: {
             // elf file start byte
@@ -114,9 +144,9 @@ int decode_request(vector<uint8_t> bytes) {
             //printf("Read from serial port: %x | %ld\n", bytes[0], bytes.size());
             while (bytes.size() > 0) {
                 //printf("Read from serial port: %x | %ld\n", bytes[0], bytes.size());
-                uint to_delete = decode_request(bytes);
+                uint to_delete = decode_request(bytes, serialPort);
                 //printf("to_delete: %d\n", to_delete);
-                if(to_delete == 0){
+                if (to_delete == 0) {
                     break;
                 }
                 // delete to-delete bytes

@@ -3,6 +3,7 @@
 //
 #include "decoder.h"
 #include "instructions.h"
+#include "serial.h"
 
 
 InstructionCallback decode(uint64_t inst) {
@@ -75,7 +76,7 @@ InstructionCallback decode(uint64_t inst) {
                     }
                 }
                 default: {
-                    printf("Unknown funct3: %b\n", itype->funct3);
+                    serial_printf("Unknown funct3: %b\n", itype->funct3);
                     exit(1409);
                 }
             }
@@ -116,7 +117,7 @@ InstructionCallback decode(uint64_t inst) {
                     return (InstructionCallback) {&execute_lwu, itype};
                 }
                 default: {
-                    printf("Unknown funct3: %b\n", itype->funct3);
+                    serial_printf("Unknown funct3: %b\n", itype->funct3);
                     exit(1409);
                 }
             }
@@ -143,7 +144,7 @@ InstructionCallback decode(uint64_t inst) {
                     return (InstructionCallback) {&execute_sd, stype};
                 }
                 default: {
-                    printf("Unknown funct3: %b\n", stype->funct3);
+                    serial_printf("Unknown funct3: %b\n", stype->funct3);
                     exit(1409);
                 }
             }
@@ -178,7 +179,7 @@ InstructionCallback decode(uint64_t inst) {
                     return (InstructionCallback) {&execute_bgeu, btype};
                 }
                 default: {
-                    printf("Unknown funct3: %b\n", btype->funct3);
+                    serial_printf("Unknown funct3: %b\n", btype->funct3);
                     exit(1409);
                 }
             }
@@ -231,7 +232,7 @@ InstructionCallback decode(uint64_t inst) {
                     return (InstructionCallback) {&execute_and, rtype};
                 }
                 default: {
-                    printf("Unknown funct3: %b\n", rtype->funct3);
+                    serial_printf("Unknown funct3: %b\n", rtype->funct3);
                     exit(1409);
                 }
             }
@@ -297,14 +298,14 @@ InstructionCallback decode(uint64_t inst) {
                     }
                 }
                 default: {
-                    printf("Unknown funct3: %b\n", rtype->funct3);
+                    serial_printf("Unknown funct3: %b\n", rtype->funct3);
                     exit(1409);
                 }
             }
         }
 
         default: {
-            printf("Unknown opcode: %b\n", opcode);
+            serial_printf("Unknown opcode: %b\n", opcode);
             exit(1409);
         }
 

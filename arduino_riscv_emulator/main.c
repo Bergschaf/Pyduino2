@@ -25,7 +25,10 @@ int main(void) {
         //_delay_ms(1000);
         //Cpu *cpu = malloc(sizeof(Cpu));
         //load_elf_executable("sl", cpu);
-        //run(cpu);
+        run(cpu);
+        serial_printf("Done\n");
+        // delay
+        _delay_ms(1000000);
         //return 111;
     }
 }

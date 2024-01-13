@@ -16,7 +16,6 @@
 struct cpu {
     int64_t pc;
     int64_t regs[32];
-    uint8_t mem[10];
 };
 typedef struct cpu Cpu;
 
