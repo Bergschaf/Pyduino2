@@ -1,7 +1,7 @@
 /*
 * usart.c
 *
-* Created : 15-08-2020 07:24:45 PM
+* Created : 15-08-2020 08:34:15 PM
 * Author  : Arnab Kumar Das
 * Website : www.ArnabKumarDas.com
 */
@@ -44,6 +44,14 @@ void USART_Init()
     UCSR0B = (1<<RXEN0) | (1<<TXEN0);
 }
 
+uint8_t USART_ReceivePolling()
+{
+    uint8_t DataByte;
+    while (( UCSR0A & (1<<RXC0)) == 0) {}; // Do nothing until data have been received
+    DataByte = UDR0 ;
+    return DataByte;
+}
+
 void USART_TransmitPolling(uint8_t DataByte)
 {
     while (( UCSR0A & (1<<UDRE0)) == 0) {}; // Do nothing until UDR is ready
@@ -53,15 +61,11 @@ void USART_TransmitPolling(uint8_t DataByte)
 int main()
 {
     USART_Init();
+    char LocalData;
     while (1)
     {
-        USART_TransmitPolling('A');
-        USART_TransmitPolling('R');
-        USART_TransmitPolling('N');
-        USART_TransmitPolling('A');
-        USART_TransmitPolling('B');
-        USART_TransmitPolling('\n');
-        _delay_ms(1000);
+        LocalData = USART_ReceivePolling();
+        USART_TransmitPolling(LocalData);
     }
     return 0;
 }
