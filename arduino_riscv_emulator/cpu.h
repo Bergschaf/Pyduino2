@@ -19,7 +19,7 @@ struct cpu {
 };
 typedef struct cpu Cpu;
 
-void memory_puts(Cpu *cpu, int64_t address, char *string);
+void memory_puts(Cpu *cpu, int64_t address, char *string, int64_t size);
 
 void memory_loads(Cpu *cpu, int64_t address, char *string, int64_t size);
 
@@ -30,7 +30,7 @@ int64_t memory_loaddw(Cpu *cpu, int64_t address);
 
 void load_elf_executable(char *filename, Cpu *cpu);
 
-uint64_t get_next_inst(Cpu *cpu);
+uint32_t get_next_inst(Cpu *cpu);
 
 void run(Cpu *cpu);
 

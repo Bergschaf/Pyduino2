@@ -19,11 +19,11 @@ Instruction *decode_JType(uint32_t bin_inst) {
     struct Instruction *jtype = malloc(sizeof(Instruction));
     jtype->type = 5;
     jtype->rd = (bin_inst >> 7) & 0b11111;
-    int imm = (bin_inst >> 12) & 0b11111111111111111111;
-    int imm_20 = (imm >> 19) & 0b1;
-    int imm_10_1 = (imm >> 9) & 0b1111111111;
-    int imm_11 = (imm >> 8) & 0b1;
-    int imm_19_12 = imm & 0b11111111;
+    int64_t imm = (bin_inst >> 12) & 0b11111111111111111111;
+    int64_t imm_20 = (imm >> 19) & 0b1;
+    int64_t imm_10_1 = (imm >> 9) & 0b1111111111;
+    int64_t imm_11 = (imm >> 8) & 0b1;
+    int64_t imm_19_12 = imm & 0b11111111;
     jtype->imm = sign_extend((imm_20 << 20) | (imm_10_1 << 1) | (imm_11 << 11) | (imm_19_12 << 12), 21);
     return jtype;
 }
@@ -44,8 +44,8 @@ Instruction *decode_SType(uint32_t bin_inst) {
     stype->funct3 = (bin_inst >> 12) & 0b111;
     stype->rs1 = (bin_inst >> 15) & 0b11111;
     stype->rs2 = (bin_inst >> 20) & 0b11111;
-    int imm_11_5 = (bin_inst >> 25) & 0b1111111;
-    int imm_4_0 = (bin_inst >> 7) & 0b11111;
+    int64_t imm_11_5 = (bin_inst >> 25) & 0b1111111;
+    int64_t imm_4_0 = (bin_inst >> 7) & 0b11111;
     stype->imm = sign_extend((imm_11_5 << 5) | imm_4_0, 12);
     return stype;
 }
@@ -56,10 +56,10 @@ Instruction *decode_BType(uint32_t bin_inst) {
     btype->funct3 = (bin_inst >> 12) & 0b111;
     btype->rs1 = (bin_inst >> 15) & 0b11111;
     btype->rs2 = (bin_inst >> 20) & 0b11111;
-    int imm_11 = (bin_inst >> 31) & 0b1;
-    int imm_12 = (bin_inst >> 7) & 0b1;
-    int imm_10_5 = (bin_inst >> 25) & 0b111111;
-    int imm_4_1 = (bin_inst >> 8) & 0b1111;
+    int64_t imm_11 = (bin_inst >> 31) & 0b1;
+    int64_t imm_12 = (bin_inst >> 7) & 0b1;
+    int64_t imm_10_5 = (bin_inst >> 25) & 0b111111;
+    int64_t imm_4_1 = (bin_inst >> 8) & 0b1111;
     btype->imm = sign_extend((imm_12 << 12) | (imm_11 << 11) | (imm_10_5 << 5) | imm_4_1 << 1, 12);
     return btype;
 }
@@ -246,24 +246,26 @@ void execute_sb(Cpu *cpu, Instruction inst) {
     //printf("imm: %lx\n", inst.imm);
     //printf("rs1: %lx\n", cpu->regs[inst.rs1]);
     //printf("SB: %lx\n", cpu->regs[inst.rs1] + inst.imm);
-    memory_write(cpu->regs[inst.rs1] + inst.imm, (uint8_t *) &cpu->regs[inst.rs2], 1);
+    uint8_t bytes[1];
+    bytes[0] = cpu->regs[inst.rs2] & 0xFF;
+    memory_write(cpu->regs[inst.rs1] + inst.imm, bytes, 1);
 }
 
 void execute_sh(Cpu *cpu, Instruction inst) {
     // S-Type
-    uint8_t *bytes[2];
-    bytes[0] = (uint8_t *) &cpu->regs[inst.rs2];
-    bytes[1] = (uint8_t *) &cpu->regs[inst.rs2] + 1;
+    uint8_t bytes[2];
+    bytes[0] = cpu->regs[inst.rs2] & 0xFF;
+    bytes[1] = cpu->regs[inst.rs2] >> 8 & 0xFF;
     memory_write(cpu->regs[inst.rs1] + inst.imm, bytes, 2);
 }
 
 void execute_sw(Cpu *cpu, Instruction inst) {
     // S-Type
-    uint8_t *bytes[4];
-    bytes[0] = (uint8_t *) &cpu->regs[inst.rs2];
-    bytes[1] = (uint8_t *) &cpu->regs[inst.rs2] + 1;
-    bytes[2] = (uint8_t *) &cpu->regs[inst.rs2] + 2;
-    bytes[3] = (uint8_t *) &cpu->regs[inst.rs2] + 3;
+    uint8_t bytes[4];
+    bytes[0] = cpu->regs[inst.rs2] & 0xFF;
+    bytes[1] = cpu->regs[inst.rs2] >> 8 & 0xFF;
+    bytes[2] = cpu->regs[inst.rs2] >> 16 & 0xFF;
+    bytes[3] = cpu->regs[inst.rs2] >> 24 & 0xFF;
     memory_write(cpu->regs[inst.rs1] + inst.imm, bytes, 4);
 }
 
@@ -416,15 +418,16 @@ void execute_ld(Cpu *cpu, Instruction inst) {
 
 void execute_sd(Cpu *cpu, Instruction inst) {
     // S-Type
-    uint8_t *bytes[8];
-    bytes[0] = (uint8_t *) &cpu->regs[inst.rs2];
-    bytes[1] = (uint8_t *) &cpu->regs[inst.rs2] + 1;
-    bytes[2] = (uint8_t *) &cpu->regs[inst.rs2] + 2;
-    bytes[3] = (uint8_t *) &cpu->regs[inst.rs2] + 3;
-    bytes[4] = (uint8_t *) &cpu->regs[inst.rs2] + 4;
-    bytes[5] = (uint8_t *) &cpu->regs[inst.rs2] + 5;
-    bytes[6] = (uint8_t *) &cpu->regs[inst.rs2] + 6;
-    bytes[7] = (uint8_t *) &cpu->regs[inst.rs2] + 7;
+    uint8_t bytes[8];
+    bytes[0] = cpu->regs[inst.rs2] & 0xFF;
+    bytes[1] = cpu->regs[inst.rs2] >> 8 & 0xFF;
+    bytes[2] = cpu->regs[inst.rs2] >> 16 & 0xFF;
+    bytes[3] = cpu->regs[inst.rs2] >> 24 & 0xFF;
+    bytes[4] = cpu->regs[inst.rs2] >> 32 & 0xFF;
+    bytes[5] = cpu->regs[inst.rs2] >> 40 & 0xFF;
+    bytes[6] = cpu->regs[inst.rs2] >> 48 & 0xFF;
+    bytes[7] = cpu->regs[inst.rs2] >> 56 & 0xFF;
+
     memory_write(cpu->regs[inst.rs1] + inst.imm, bytes, 8);
 }
 

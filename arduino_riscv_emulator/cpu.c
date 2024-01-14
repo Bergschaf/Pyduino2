@@ -26,85 +26,72 @@ void load_elf_executable(char *filename, Cpu *cpu) {
     cpu->regs[2] = MEM_SIZE - 1000;
 }
 
-uint64_t get_next_inst(Cpu *cpu) {
+uint32_t get_next_inst(Cpu *cpu) {
     uint8_t bytes[4];
     memory_load(cpu->pc, bytes, 4);
 
-    uint64_t inst = 0;
+    uint32_t inst = 0;
     for (int i = 0; i < 4; i++) {
-        inst |= bytes[i] << (8 * i);
+        inst |= (uint32_t)bytes[i] << (8 * i);
     }
     return inst;
 }
 
 
 void run_next(Cpu *cpu) {
-    uint64_t inst = get_next_inst(cpu);
-    serial_printf("instruction: %x\n", inst);
+    uint32_t inst = get_next_inst(cpu);
+    //serial_printf("instruction: %lx\n", inst);
     InstructionCallback callback = decode(inst);
-    // print the name of the function
-    void *funprt = callback.func;
-    if (LOG_LEVEL == 0) {
-        //char **syms = backtrace_symbols(&funprt, 1);
-        //printf("%s\n", syms[0]);
-        //print_Instruction(*callback.inst);
-    }
-    // print stack pointer
-    // print registers
+
     int64_t prev_pc = cpu->pc;
+
     callback.func(cpu, *callback.inst);
     cpu->regs[0] = 0; // TODO may be very broken
+    //serial_printf("Inst.imm: %lx\n", callback.inst->imm);
+    //print_human_debug(cpu);
+
     if (cpu->pc == prev_pc) {
         cpu->pc += 4;
-    }
-    if (LOG_LEVEL == 0) {
-        print_human_debug(cpu);
-    }
-    else if (LOG_LEVEL == 1) {
-        serial_printf("PC: 0x%lx\n", cpu->pc);
     }
 
     free(callback.inst);
 }
 
 void print_human_debug(Cpu *cpu) {
-    serial_printf("PC: 0x%lx\n", cpu->pc);
+    serial_printf("---------\nPC: 0x%lx\n", cpu->pc);
     print_registers(cpu);
     serial_printf("end\n\n");
 }
 
-void print_debug(Cpu *cpu) {
-    printf("PC: 0x%lx\n", cpu->pc);
-    for (int i = 0; i < 32; i++) {
-        printf("%d: 0x%lx\n", i, cpu->regs[i]);
-    }
-    printf("end\n");
-}
 
 void run(Cpu *cpu) {
     // stop and ask for input after 1000 instructions
     int i = 0;
     while (cpu->pc < MEM_SIZE) {
-        serial_printf("PC: 0x%lx\n", cpu->pc);
         run_next(cpu);
         i++;
         //if (i > 100000) {
         //    break;
         //}
     }
+    serial_printf("Ran out of instructions (not good)\n");
 }
 
 void print_registers(Cpu *cpu) {
     for (int i = 0; i < 32; i++) {
-        printf("%d: 0x%lx (%s)\n", i, cpu->regs[i], reg_names[i]);
+        if (cpu->regs[i] != 0) {
+            serial_printf("%d: 0x%lx\n", i, cpu->regs[i]);
+        }
     }
 }
 
-void memory_puts(Cpu *cpu, int64_t address, char *string) {
-    memory_write(address, string, strlen(string));
+void memory_puts(Cpu *cpu, int64_t address, char *string, int64_t size) {
+    serial_printf("puts address: %lx | string: %s | size: %ld\n", address, string, size);
+    memory_write(address, string, size);
 }
 
 void memory_loads(Cpu *cpu, int64_t address, char *string, int64_t size) {
+    serial_printf("loads len: %ld | adress: %lx\n", size, address);
     memory_load(address, string, size);
 }
 

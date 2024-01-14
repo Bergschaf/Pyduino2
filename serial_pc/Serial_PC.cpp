@@ -38,7 +38,7 @@ void transmit_elf_file(string filename, SerialPort &serialPort) {
 
     while (1) {
         if (to_send > 0) {
-            printf("Sending %d bytes\n", to_send);
+            //printf("Sending %d bytes\n", to_send);
             serialPort.WriteBinary(vector<uint8_t>(data, data + to_send));
             data += to_send;
             to_send = 0;
@@ -69,6 +69,14 @@ int decode_request(vector<uint8_t> bytes, SerialPort &serialPort) {
             //printf("Length: %d\n", bytes[1]);
             uint8_t size_byte = bytes[1];
             to_send = size_byte;
+            /*
+            if(size_byte < 64){
+                // print the content of the memory
+                for (int i = 0; i < 0x12000; ++i) {
+                    printf("%x | %x\n", i, memory[i]);
+                }
+            }*/
+
             return 2;
         }
 
@@ -85,8 +93,27 @@ int decode_request(vector<uint8_t> bytes, SerialPort &serialPort) {
             if (length > bytes.size() - 11) {
                 return 0;
             }
-            //printf("Address: %lx\n", address);
-            //printf("Length: %d\n", length);
+            /*printf("Store Address: %lx\n", address);
+            printf("Store Length: %d\n", length);
+            if (length == 4) {
+                uint64_t res = 0;
+                for (int i = 0; i < 4; ++i) {
+                    res |= bytes[i + 11] << (i * 8);
+                }
+                printf("Store Value: %lx\n", res);
+            } else if (length == 8) {
+                uint64_t res = 0;
+                for (int i = 0; i < 8; ++i) {
+                    res |= bytes[i + 11] << (i * 8);
+                }
+                printf("Store Value: %lx\n", res);
+            } else {
+                printf("Store Value: ");
+                for (int i = 0; i < length; ++i) {
+                    printf("%x ", bytes[i + 11]);
+                }
+                printf("\n");
+            }*/
 
             for (int i = 0; i < length; ++i) {
                 memory[address + i] = bytes[i + 11];
@@ -103,24 +130,39 @@ int decode_request(vector<uint8_t> bytes, SerialPort &serialPort) {
             length |= bytes[9] << 8;
             length |= bytes[10];
 
-            if (bytes.size() < 10) {
+            if (bytes.size() < 11) {
                 return 0;
             }
 
 
-            printf("Address: %lx\n", address);
-            printf("Length: %d\n", length);
+            //printf("Address: %lx | Length: %d\n", address, length);
+            //printf("Length: %d\n", length);
             // print all bytes
-            for (int i = 0; i < bytes.size(); ++i) {
-                printf("%x ", bytes[i]);
-            }
+            //for (int i = 0; i < bytes.size(); ++i) {
+            //    printf("%x ", bytes[i]);
+            //}
             bytes = vector<uint8_t>(length);
             for (int i = 0; i < length; ++i) {
                 bytes[i] = memory[address + i];
             }
             serialPort.WriteBinary({0x05});
             serialPort.WriteBinary(bytes);
-            return 10;
+            // print all bytes sent as a 32bit integer
+            /*
+            if (length == 4) {
+                uint64_t res = 0;
+                for (int i = 0; i < 4; ++i) {
+                    res |= bytes[i] << (i * 8);
+                }
+                printf("Sent: %lx\n", res);
+            } else if (length == 8) {
+                uint64_t res = 0;
+                for (int i = 0; i < 8; ++i) {
+                    res |= bytes[i] << (i * 8);
+                }
+                printf("Sent: %lx\n", res);
+            }*/
+            return 11;
 
         }
 
@@ -151,6 +193,7 @@ int decode_request(vector<uint8_t> bytes, SerialPort &serialPort) {
                 }
                 // delete to-delete bytes
                 if (to_delete > bytes.size()) {
+                    bytes = vector<uint8_t>();
                     break;
                 }
                 bytes = vector<uint8_t>(bytes.begin() + to_delete, bytes.end());

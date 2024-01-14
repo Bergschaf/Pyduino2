@@ -4,9 +4,10 @@ from elf_loader import ELF_File
 import termcolor
 from kernel import Kernel
 
-LOG_LEVEL = 2
+LOG_LEVEL = 3
 BREAKPOINTS = []
 DISABLE_BREAKPOINTS = True
+STOP_EVERY_1000 = True
 
 
 def init(file):
@@ -15,7 +16,7 @@ def init(file):
     to_load = elf.get_program_data()
 
     # load the Segments specified in the program headers
-    memory_size = 10000000  # last segment's virtual address + size
+    memory_size = 100000000  # last segment's virtual address + size
     memory = Memory(memory_size)
     memory.start_adress = 0 # TODO
 
@@ -40,7 +41,7 @@ def init(file):
 
 def run_next(kernel):
     inst = kernel.memory.load_word(kernel.registers.pc)
-    kernel.log(f"Instruction: {inst:08X} | {inst:032b}")
+    kernel.log(f"Instruction: {hex(inst)} | {inst:032b}")
     kernel.log(f"PC: {kernel.registers.pc} | " + termcolor.colored(f'0x{int_to_bin(kernel.registers.pc):08X}', 'white',
                                                                    force_color=True))
     prev_pc = kernel.registers.pc
@@ -70,6 +71,8 @@ def run(kernel):
         num_instructions += 1
         kernel.log("Registers:\n", kernel.registers)
         kernel.log(f"Instruction count: {num_instructions}\n\n")
+        if STOP_EVERY_1000 and num_instructions % 1000 == 0:
+            input()
 
 
 def run_test_file(file):
@@ -84,10 +87,11 @@ def run_test_file(file):
 
 
 if __name__ == '__main__':
-    file = "test"
+    file = "../arduino_riscv_emulator/test_print"
     kernel = init(file)
     # 0x156cc
-    exit()
+    #exit()
+
     run(kernel)
 
     # 11f88 -> evlt stdout ecall

@@ -136,7 +136,7 @@ void receive_elf_file(ElfFile *elfFile) {
     }
     free(elfFile->programHeaders);
 
-    printf("loaded (%d) loadable program headers\n", num_loadable);
+    serial_printf("loaded (%d) loadable program headers\n", num_loadable);
 
     // sort the program headers by their offset in the elf file TODO probably the wrong way
     /*
@@ -160,9 +160,9 @@ void receive_elf_file(ElfFile *elfFile) {
         uint64_t vaddr = loadableProgramHeaders[i].vaddr;
 
         // print file offset, size, vaddr
-        serial_printf("file_offset: %uld\n", file_offset);
-        serial_printf("size: %uld\n", size);
-        serial_printf("vaddr: %uld\n", vaddr);
+        serial_printf("file_offset: %lx\n", file_offset);
+        serial_printf("size: %lx\n", size);
+        serial_printf("vaddr: %lx\n", vaddr);
         if (file_offset < offset) {
             // TODO error
             serial_printf("Hier, nicht gut, file_offset: %uld, offset: %uld\n", file_offset, offset);
@@ -185,6 +185,7 @@ void receive_elf_file(ElfFile *elfFile) {
                 discard_size -= chunk_size;
             }
         }
+        offset = file_offset + size;
 
         while (size > 0) {
             //serial_printf("size: %uld\n", size);
@@ -198,7 +199,6 @@ void receive_elf_file(ElfFile *elfFile) {
             vaddr += chunk_size;
         }
 
-        offset = file_offset + size;
     }
 }
 
