@@ -19,7 +19,7 @@ int64_t sys_uname(Cpu *cpu, int64_t arg0, int64_t arg1, int64_t arg2, int64_t ar
     memory_puts(cpu, arg0 + size * 4, ljust("riscv64", res, size, fillchar, '\0'),65);
     memory_puts(cpu, arg0 + size * 5, ljust("u", res, size, fillchar, '\0'),65);
 
-    return 0;
+    return -1;
 }
 
 int64_t sys_set_tid(int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
@@ -107,9 +107,9 @@ void do_syscall(Cpu *cpu) {
             break;
         default:
             // print red unknown syscall
-            printf("\033[0;31m");
-            printf("unknown syscall %ld\n", syscall_num);
-            printf("\033[0m");
+
+            serial_printf("unknown syscall %ld\n", syscall_num);
+            serial_printf("args: %ld, %ld, %ld, %ld, %ld, %ld\n", arg0, arg1, arg2, arg3, arg4, arg5);
             return_value = syscall_discard(arg0, arg1, arg2, arg3, arg4, arg5);
             break;
     }

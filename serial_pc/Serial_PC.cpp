@@ -52,15 +52,15 @@ int decode_request(vector<uint8_t> bytes, SerialPort &serialPort) {
         case 0x01: {
             // print request
             uint8_t size_byte = bytes[1];
-            // print the bytes colored
+            // print the bytes colored yellow
             if (size_byte > bytes.size()) {
                 return 0;
             }
-            printf("\033[1;31m");
+            printf("\033[1;33m");
             for (int i = 0; i < size_byte; ++i) {
                 printf("%c", bytes[i + 2]);
             }
-            printf("\033[0m\n");
+            printf("\033[0m");
             //printf("Printed %d bytes\n", size_byte);
             return size_byte + 2;
         }
@@ -245,7 +245,7 @@ int main() {
     // delay 1s
 
     // start thread that sends the elf file
-    thread t(transmit_elf_file, "/home/bergschaf/PycharmProjects/Pyduino2/serial_pc/test", ref(serialPort));
+    thread t(transmit_elf_file, "/home/bergschaf/PycharmProjects/Pyduino2/arduino_riscv_emulator/test", ref(serialPort));
 
     listener(serialPort);
     serialPort.Close();

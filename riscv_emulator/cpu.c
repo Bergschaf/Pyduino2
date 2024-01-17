@@ -54,6 +54,7 @@ void run_next(Cpu *cpu) {
     if (LOG_LEVEL == 0) {
         char **syms = backtrace_symbols(&funprt, 1);
         printf("%s\n", syms[0]);
+        printf("Instruction: 0x%lx\n", inst);
         print_Instruction(*callback.inst);
     }
     // print stack pointer
@@ -61,22 +62,27 @@ void run_next(Cpu *cpu) {
     int64_t prev_pc = cpu->pc;
     callback.func(cpu, *callback.inst);
     cpu->regs[0] = 0; // TODO may be very broken
-    if (cpu->pc == prev_pc) {
-        cpu->pc += 4;
-    }
+
     if (LOG_LEVEL == 0) {
         print_human_debug(cpu);
-    }
-    else if (LOG_LEVEL == 1) {
+    } else if (LOG_LEVEL == 1) {
         printf("PC: 0x%lx\n", cpu->pc);
+    }
+
+
+    if (cpu->pc == prev_pc) {
+        cpu->pc += 4;
     }
 
     free(callback.inst);
 }
 
 void print_human_debug(Cpu *cpu) {
-    printf("PC: 0x%lx\n", cpu->pc);
-    print_registers(cpu);
+    // highlight program counter bold white
+    printf("\033[1;1m");
+    printf("---------\nPC: 0x%lx\n", cpu->pc);
+    printf("\033[0m");
+    print_human_registers(cpu);
     printf("end\n\n");
 }
 
@@ -94,7 +100,7 @@ void run(Cpu *cpu) {
     while (cpu->pc < MEM_SIZE) {
         run_next(cpu);
         i++;
-        //if (i > 100000) {
+        //if (i > 3000) {
         //    break;
         //}
     }
@@ -103,6 +109,13 @@ void run(Cpu *cpu) {
 void print_registers(Cpu *cpu) {
     for (int i = 0; i < 32; i++) {
         printf("%d: 0x%lx (%s)\n", i, cpu->regs[i], reg_names[i]);
+    }
+}
+
+
+void print_human_registers(Cpu *cpu) {
+    for (int i = 0; i < 32; i++) {
+        if (cpu->regs[i] != 0) { printf("%d: 0x%lx (%s)\n", i, cpu->regs[i], reg_names[i]); }
     }
 }
 
@@ -119,7 +132,7 @@ void memory_loads(Cpu *cpu, int64_t address, char *string, int64_t size) {
     for (int i = 0; i < size; ++i) {
         string[i] = cpu->mem[address + i];
     }
-    string[size-1] = '\0';
+    string[size - 1] = '\0';
 }
 
 

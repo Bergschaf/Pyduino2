@@ -39,6 +39,8 @@ void run_next(Cpu *cpu);
 
 void print_registers(Cpu *cpu);
 
+void print_human_registers(Cpu *cpu);
+
 void print_human_debug(Cpu *cpu);
 
 void print_debug(Cpu *cpu);

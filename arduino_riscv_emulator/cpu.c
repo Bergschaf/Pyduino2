@@ -24,6 +24,7 @@ void load_elf_executable(char *filename, Cpu *cpu) {
     free(file);
     // Set sp to the end of the memory
     cpu->regs[2] = MEM_SIZE - 1000;
+    serial_printf("Entry point: %lx\n", cpu->pc);
 }
 
 uint32_t get_next_inst(Cpu *cpu) {
@@ -40,7 +41,7 @@ uint32_t get_next_inst(Cpu *cpu) {
 
 void run_next(Cpu *cpu) {
     uint32_t inst = get_next_inst(cpu);
-    //serial_printf("instruction: %lx\n", inst);
+    serial_printf("instruction: %lx\n", inst);
     InstructionCallback callback = decode(inst);
 
     int64_t prev_pc = cpu->pc;
@@ -48,7 +49,7 @@ void run_next(Cpu *cpu) {
     callback.func(cpu, *callback.inst);
     cpu->regs[0] = 0; // TODO may be very broken
     //serial_printf("Inst.imm: %lx\n", callback.inst->imm);
-    //print_human_debug(cpu);
+    print_human_debug(cpu);
 
     if (cpu->pc == prev_pc) {
         cpu->pc += 4;
