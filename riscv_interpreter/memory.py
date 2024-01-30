@@ -4,15 +4,17 @@ class Memory:
     def __init__(self, size):
         self.start_adress = 0 # TODO nicht so gut
         self.size = size
-        self.last_address = size
+        self.last_address = size - 100
         self.memory = np.zeros(size, dtype=np.uint8)
         self.reservations = set()
         self.max_store_adress = 0
 
     def mmap_anonymous(self, size):
-        address = self.last_address  - size - 1 + self.start_adress
+        address = self.last_address - size #+ self.start_adress
         self.last_address = address
-        print(address)
+        # intialize with 0
+        self.store_bytes(address, [0] * size)
+        #print(address)
         return address
 
 

@@ -1,11 +1,14 @@
+import random
+
 from interpreter import int_from_bin, int_to_bin
 from termcolor import colored
+import time
 
 
 class Filesystem:
     SPECIAL_FILES = {
-        "/proc/sys/kernel/osrelease": "6.6.8",
-        "/proc/sys/vm/overcommit_memory": "0",
+        "/proc/sys/kernel/osrelease": "6.6.8\0",
+        "/proc/sys/vm/overcommit_memory": "0\0",
     }
     SYMBOLIC_LINKS = {
         "/proc/self/exe": "/bin/riscv"
@@ -88,6 +91,7 @@ class Kernel:
 
     @staticmethod
     def sys_brk(kernel, a0, *_):
+        print("brk:", hex(a0))
         return 0
 
     @staticmethod
@@ -132,11 +136,13 @@ class Kernel:
 
     @staticmethod
     def set_tid_address(kernel, a0, *_):
-        return 69
+        return 85085
 
     @staticmethod
     def sys_mmap(kernel, addr, length, prot, flags, fd, offset, *_):
-        print("mmap:", addr, length, prot, flags, int_from_bin(fd), offset)
+        print(f"mmap: addr: {hex(int_from_bin(addr))}, length: {hex(int_from_bin(length))}, prot: {hex(int_from_bin(prot))}, flags: {hex(int_from_bin(flags))}, fd: {hex(int_from_bin(fd))}, offset: {hex(int_from_bin(offset))}")
+        if int_from_bin(flags) != 34:
+            raise NotImplementedError("mmap with flags not implemented")
 
         if int_from_bin(fd) == -1:
             if addr != 0:
@@ -145,7 +151,7 @@ class Kernel:
 
         else:
             raise NotImplementedError("mmap with file not implemented")
-        return 0
+
 
     @staticmethod
     def sys_readlinkat(kernel, dirfd, pathname, buf, bufsiz, *_):
@@ -160,15 +166,21 @@ class Kernel:
 
     @staticmethod
     def sys_clock_gettime(kernel, clk_id, tp, *_):
-        print("clock_gettime:", clk_id, tp)
-        kernel.memory.store_doubleword(int_from_bin(tp), 100)
+        print("clock_gettime:", clk_id, tp, time.time())
+        kernel.memory.store_doubleword(int_from_bin(tp), 100) #TODO
         return 1
 
+    @staticmethod
+    def sys_getrandom(kernel, buf, buflen, flags, *_):
+        print("getrandom:", buf, buflen, flags)
+        bytes = [random.randint(0, 255) for _ in range(int_from_bin(buflen))]
+        kernel.memory.store_bytes(int_from_bin(buf), bytes)
+        return int_from_bin(buflen)
 
     @staticmethod
-    def sys_nanosleep(kernel, a0, a1,*_):
+    def sys_nanosleep(kernel, a0, a1, *_):
         import time
-        sleep_amount=kernel.memory.load_doubleword(int_from_bin(a0+8)) / 1000000000
+        sleep_amount = kernel.memory.load_doubleword(int_from_bin(a0 + 8)) / 1000000000
         kernel.log("Sleeping for ", sleep_amount, " s", priority=2)
         time.sleep(sleep_amount)
         return 0
@@ -191,6 +203,7 @@ class Kernel:
         177: sys_getuid,
         222: sys_mmap,
         214: sys_brk,
+        278: sys_getrandom,
     }
 
     def __init__(self, memory, registers, elf, log_level=0):
@@ -225,7 +238,7 @@ class Kernel:
     def exception(self, cause):
         self.log_level = 0
         self.log("Exception: ", cause, priority=3)
-        self.log("Program Counter: ", hex(int_to_bin(self.registers.pc)), priority=2)
+        self.log("Program Counter: ", hex(int_to_bin(self.registers.pc)), priority=1)
         self.log("Registers:\n", self.registers)
         exit(1)
 
@@ -243,7 +256,7 @@ class Kernel:
 
         if n in self.SYSCALL_TABLE:
             ret = self.SYSCALL_TABLE[n](self, a0, a1, a2, a3, a4, a5, n)
-            self.log(f"Syscall {n} | {self.SYSCALL_TABLE[n].__name__}", priority=2)
+            self.log(f"Syscall {n} | {self.SYSCALL_TABLE[n].__name__} | -> {ret}", priority=2)
         else:
             self.log(f"Unknown syscall {int_from_bin(n)}: ", a0, a1, a2, a3, priority=2)
             ret = -1

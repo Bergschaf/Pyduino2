@@ -4,7 +4,7 @@ from elf_loader import ELF_File
 import termcolor
 from kernel import Kernel
 
-LOG_LEVEL = 2
+LOG_LEVEL = 0
 BREAKPOINTS = []
 DISABLE_BREAKPOINTS = True
 STOP_EVERY_1000 = False
@@ -16,7 +16,7 @@ def init(file):
     to_load = elf.get_program_data()
 
     # load the Segments specified in the program headers
-    memory_size = 100000000  # last segment's virtual address + size
+    memory_size = 1000000000  # last segment's virtual address + size
     memory = Memory(memory_size)
     memory.start_adress = 0 # TODO
 
@@ -34,7 +34,7 @@ def init(file):
     kernel.log("Memory size: ", memory_size, priority=2)
 
     # set the stack pointer
-    kernel.registers[2] = memory_size - 1000
+    kernel.registers[2] = memory_size - memory_size // 10 # TODO
 
     return kernel
 
@@ -87,7 +87,7 @@ def run_test_file(file):
 
 
 if __name__ == '__main__':
-    file = "../arduino_riscv_emulator/test_print"
+    file = "../bin/python"
     kernel = init(file)
     # 0x156cc
     #exit()
