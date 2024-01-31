@@ -43,7 +43,7 @@ def run_next(kernel):
     inst = kernel.memory.load_word(kernel.registers.pc)
     kernel.log(f"Instruction: {hex(inst)} | {inst:032b}")
     kernel.log(f"PC: {kernel.registers.pc} | " + termcolor.colored(f'0x{int_to_bin(kernel.registers.pc):08X}', 'white',
-                                                                   force_color=True))
+                                                                   force_color=True), priority=1)
     prev_pc = kernel.registers.pc
     instruction = Instructions.decode(inst, kernel)
     if kernel.registers.pc not in Instructions.CACHE:
@@ -70,7 +70,7 @@ def run(kernel):
             return res
         num_instructions += 1
         kernel.log("Registers:\n", kernel.registers)
-        kernel.log(f"Instruction count: {num_instructions}\n\n")
+        kernel.log(f"Instruction count: {num_instructions}\n\n", priority=1)
         if STOP_EVERY_1000 and num_instructions % 1000 == 0:
             input()
 

@@ -53,6 +53,29 @@ int64_t sys_writev(Cpu *cpu, int64_t arg0, int64_t addr, int64_t count, int64_t 
     return res;
 }
 
+int64_t sys_write(Cpu *cpu, int64_t fd, int64_t buf, int64_t count, int64_t arg3, int64_t arg4, int64_t arg5) {
+    // treat as print
+    if (fd == 1 || fd == 2){ // TODO fd change
+        // print
+        count++;
+        char *str = malloc(count);
+        memory_loads(cpu, buf, str, count);
+        // print colored
+        printf("\033[0;32m");
+        printf("%s", str);
+        printf("\033[0m");
+        free(str);
+    }
+    else {
+        // debug
+        char *str = malloc(count);
+        memory_loads(cpu, buf, str, count);
+        printf("Write to fd %ld: ", fd);
+        printf("%s\n", str);
+        free(str);
+    }
+}
+
 int64_t sys_nanosleep(Cpu *cpu, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
     int64_t sleep = memory_loaddw(cpu, arg0 + 8) / 1000;
     // print colored
@@ -65,6 +88,21 @@ int64_t sys_nanosleep(Cpu *cpu, int64_t arg0, int64_t arg1, int64_t arg2, int64_
     usleep(sleep);
     return 0;
 }
+
+int64_t sys_getrandom(Cpu *cpu, int64_t buf, int64_t buflen, int64_t flags, int64_t arg3, int64_t arg4, int64_t arg5) {
+    // print colored
+    if (LOG_LEVEL <= 3) {
+        printf("\033[0;33m");
+        printf("getrandom(%ld, %ld, %ld)\n", buf, buflen, flags);
+        printf("\033[0m");
+    }
+    // fill with random
+    for (int i = 0; i < buflen; ++i) {
+        cpu->mem[buf + i] = rand() % 256;
+    }
+    return buflen;
+}
+
 
 void do_syscall(Cpu *cpu) {
     int64_t return_value = -1;
@@ -84,6 +122,10 @@ void do_syscall(Cpu *cpu) {
         printf("\033[0m");
     }
     switch (syscall_num) {
+        case 64:
+            return_value = sys_write(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
         case 66:
             return_value = sys_writev(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
             break;
@@ -102,6 +144,10 @@ void do_syscall(Cpu *cpu) {
 
         case 160:
             return_value = sys_uname(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
+        case 278:
+            return_value = sys_getrandom(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
             break;
         default:
             // print red unknown syscall

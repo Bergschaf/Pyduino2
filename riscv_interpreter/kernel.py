@@ -136,7 +136,7 @@ class Kernel:
 
     @staticmethod
     def set_tid_address(kernel, a0, *_):
-        return 85085
+        return 69
 
     @staticmethod
     def sys_mmap(kernel, addr, length, prot, flags, fd, offset, *_):
