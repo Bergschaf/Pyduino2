@@ -34,7 +34,7 @@ void load_elf_executable(char *filename, Cpu *cpu) {
     free(file->data);
     free(file);
     // Set sp to the end of the memory
-    cpu->regs[2] = MEM_SIZE - 1000;
+    cpu->regs[2] = MEM_SIZE - MEM_SIZE / 10;
 }
 
 uint64_t get_next_inst(Cpu *cpu) {
@@ -100,9 +100,9 @@ void run(Cpu *cpu) {
     while (cpu->pc < MEM_SIZE) {
         run_next(cpu);
         i++;
-        //if (i > 3000) {
-        //    break;
-        //}
+        if (LOG_LEVEL <= 1) {
+            printf("Instruction count: %d\n", i);
+        }
     }
 }
 

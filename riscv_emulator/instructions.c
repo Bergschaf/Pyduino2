@@ -13,7 +13,7 @@ Instruction *decode_UType(uint32_t bin_inst) {
     return utype;
 }
 
-Instruction* decode_JType(uint32_t bin_inst) {
+Instruction *decode_JType(uint32_t bin_inst) {
     struct Instruction *jtype = malloc(sizeof(Instruction));
     jtype->type = 5;
     jtype->rd = (bin_inst >> 7) & 0b11111;
@@ -83,7 +83,7 @@ void print_JType(Instruction jtype) {
 }
 
 void print_IType(Instruction itype) {
-    printf("IType:\n rd: %s\n funct3: %d\n rs1: %s\n imm: %lx | %ld\n", reg_names[itype.rd], itype.funct3,
+    printf("IType:\n rd: %s\n funct3: %d\n rs1: %s\n imm: 0x%lx | %ld\n", reg_names[itype.rd], itype.funct3,
            reg_names[itype.rs1], itype.imm, itype.imm);
 }
 
@@ -154,8 +154,10 @@ void execute_jal(Cpu *cpu, Instruction inst) {
 
 void execute_jalr(Cpu *cpu, Instruction inst) {
     // I-Type
+    int64_t target = cpu->regs[inst.rs1] + inst.imm;
+    target = target << 1 >> 1;
     cpu->regs[inst.rd] = cpu->pc + 4;
-    cpu->pc = cpu->regs[inst.rs1] + inst.imm;
+    cpu->pc = target;
 }
 
 void execute_beq(Cpu *cpu, Instruction inst) {
@@ -363,10 +365,10 @@ void execute_ebreak(Cpu *cpu, Instruction inst) {
 
 void execute_lwu(Cpu *cpu, Instruction inst) {
     // I-Type
-    cpu->regs[inst.rd] =  (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24) |
-                          (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16) |
-                          (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) |
-                          cpu->mem[cpu->regs[inst.rs1] + inst.imm];
+    cpu->regs[inst.rd] = (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24) |
+                         (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16) |
+                         (cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) |
+                         cpu->mem[cpu->regs[inst.rs1] + inst.imm];
 }
 
 void execute_ld(Cpu *cpu, Instruction inst) {
@@ -394,14 +396,14 @@ void execute_ld(Cpu *cpu, Instruction inst) {
 
 
     // I-Type
-    cpu->regs[inst.rd] = ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 7] << 56) |
-                          ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 6] << 48) |
-                          ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 5] << 40) |
-                          ((uint64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 4] << 32) |
-                          ((int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24) |
-                          ((int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16) |
-                          ((int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) |
-                            (int64_t)cpu->mem[cpu->regs[inst.rs1] + inst.imm];
+    cpu->regs[inst.rd] = ((uint64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm + 7] << 56) |
+                         ((uint64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm + 6] << 48) |
+                         ((uint64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm + 5] << 40) |
+                         ((uint64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm + 4] << 32) |
+                         ((int64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm + 3] << 24) |
+                         ((int64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm + 2] << 16) |
+                         ((int64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm + 1] << 8) |
+                         (int64_t) cpu->mem[cpu->regs[inst.rs1] + inst.imm];
 }
 
 void execute_sd(Cpu *cpu, Instruction inst) {

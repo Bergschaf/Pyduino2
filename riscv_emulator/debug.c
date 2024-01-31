@@ -8,7 +8,7 @@
 
 int main(){
     Cpu *cpu = malloc(sizeof(Cpu));
-    load_elf_executable("test", cpu);
+    load_elf_executable("../bin/python", cpu);
     while (1) {
         int old_stdout = dup(fileno(stdout));
         freopen ("/dev/null", "w", stdout);
