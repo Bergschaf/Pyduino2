@@ -5,11 +5,11 @@ CFLAGS=-Wall -Wextra  -pedantic -g -rdynamic
 all: main debug
 
 
-main: main.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o config.h
-	$(CC) $(CFLAGS)  main.c cpu.o util.o elfLoader.o instructions.o decoder.o kernel.o  -o main
+main: main.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o config.h filesystem.o
+	$(CC) $(CFLAGS)  main.c cpu.o util.o elfLoader.o instructions.o decoder.o filesystem.o kernel.o   -o main
 
-debug: debug.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o config.h
-	$(CC) $(CFLAGS) debug.c cpu.o util.o elfLoader.o instructions.o decoder.o kernel.o  -o debug
+debug: debug.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o config.h filesystem.o
+	$(CC) $(CFLAGS) debug.c cpu.o util.o elfLoader.o instructions.o decoder.o kernel.o filesystem.o  -o debug
 
 debug_elfLoader: debug_elfLoader.c cpu.o util.o elfLoader.o decoder.o instructions.o kernel.o config.h
 	$(CC) $(CFLAGS) debug_elfLoader.c cpu.o util.o elfLoader.o instructions.o decoder.o kernel.o  -o debug_elfLoader
@@ -29,8 +29,8 @@ instructions.o: instructions.c
 decoder.o: decoder.c instructions.c
 	$(CC) $(CFLAGS) -c decoder.c instructions.o -o decoder.o
 
-kernel.o: kernel.c filesystem.o
-	$(CC) $(CFLAGS) -c kernel.c filesystem.o
+kernel.o: kernel.c filesystem.c
+	$(CC) $(CFLAGS) -c kernel.c filesystem.o -o kernel.o
 
 filesystem.o: filesystem.c filesystem.h
 	$(CC) $(CFLAGS) -c filesystem.c

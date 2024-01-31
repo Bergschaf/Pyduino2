@@ -10,24 +10,26 @@
 #include "stdio.h"
 #include "string.h"
 
-struct file {
+struct file_struct {
     int fd; // TODO not very good but works for now
     char *name; // with path
     char *content;
     int64_t size;
-    struct file *next;
+    struct file_struct *next;
 };
-typedef struct file File;
+typedef struct file_struct File;
 
 // all files
-File *file;
+File *entry_file;
 
-int open_file(char *pathname, int flags, int mode);
+int open_file(char*, int, int);
 
 void initialize_filesystem();
 
-void close(int fd);
+void close_file(int);
 
-void create_file(char *name, char *content, int64_t size);
+void read_file(int fd, char *buf, int64_t count);
+
+void create_file(char*, char*, int64_t);
 
 #endif //RISCV_EMULATOR_FILESYSTEM_H

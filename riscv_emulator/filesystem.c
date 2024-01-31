@@ -3,28 +3,27 @@
 //
 
 #include "filesystem.h"
-
 void create_file(char *name, char *content, int64_t size) {
     File *new_file = malloc(sizeof(File));
-    if (file == NULL) {
+    if (entry_file == NULL) {
         new_file->fd = 0;
     } else {
-        new_file->fd = file->fd + 1;
+        new_file->fd = entry_file->fd + 1;
     }
     new_file->name = name;
     new_file->content = content;
     new_file->size = size;
-    new_file->next = file;
-    file = new_file;
+    new_file->next = entry_file;
+    entry_file = new_file;
 }
 
 void initialize_filesystem() {
-    file = NULL;
+    //entry_file = NULL;
     create_file("/proc/sys/vm/overcommit_memory", "0\0", 2);
 }
 
 File *get_file_from_fd(int fd) {
-    File *current = file;
+    File *current = entry_file;
     while (current != NULL) {
         if (current->fd == fd) {
             return current;
@@ -35,7 +34,7 @@ File *get_file_from_fd(int fd) {
 }
 
 int open_file(char *pathname, int flags, int mode) { // TODO flags and mode ignored
-    File *current = file;
+    File *current = entry_file;
     while (current != NULL) {
         if (strcmp(current->name, pathname) == 0) {
             // file found
@@ -43,13 +42,14 @@ int open_file(char *pathname, int flags, int mode) { // TODO flags and mode igno
         }
         current = current->next;
     }
+    return -1;
 }
 
-void close(int fd) {
+void close_file(int fd) {
     // TODO
 }
 
-void read(int fd, char *buf, int64_t count) {
+void read_file(int fd, char *buf, int64_t count) {
     File *file = get_file_from_fd(fd);
     if (file == NULL) {
         return;

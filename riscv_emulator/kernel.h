@@ -10,4 +10,5 @@
 
 void do_syscall(Cpu *cpu);
 
+void initialize_kernel(void);
 #endif //RISCV_EMULATOR_KERNEL_H

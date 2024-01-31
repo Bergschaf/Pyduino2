@@ -4,6 +4,7 @@
 
 #include "kernel.h"
 // import usleep
+#include "filesystem.h"
 #include <unistd.h>
 
 int64_t sys_uname(Cpu *cpu, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
@@ -55,7 +56,7 @@ int64_t sys_writev(Cpu *cpu, int64_t arg0, int64_t addr, int64_t count, int64_t 
 
 int64_t sys_write(Cpu *cpu, int64_t fd, int64_t buf, int64_t count, int64_t arg3, int64_t arg4, int64_t arg5) {
     // treat as print
-    if (fd == 1 || fd == 2){ // TODO fd change
+    if (fd == 1 || fd == 2) { // TODO fd change
         // print
         count++;
         char *str = malloc(count);
@@ -65,8 +66,7 @@ int64_t sys_write(Cpu *cpu, int64_t fd, int64_t buf, int64_t count, int64_t arg3
         printf("%s", str);
         printf("\033[0m");
         free(str);
-    }
-    else {
+    } else {
         // debug
         char *str = malloc(count);
         memory_loads(cpu, buf, str, count);
@@ -74,6 +74,7 @@ int64_t sys_write(Cpu *cpu, int64_t fd, int64_t buf, int64_t count, int64_t arg3
         printf("%s\n", str);
         free(str);
     }
+    return count;
 }
 
 int64_t sys_nanosleep(Cpu *cpu, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
@@ -103,6 +104,41 @@ int64_t sys_getrandom(Cpu *cpu, int64_t buf, int64_t buflen, int64_t flags, int6
     return buflen;
 }
 
+int64_t sys_openat(Cpu *cpu, int64_t dirfd, int64_t pathname, int64_t flags, int64_t mode, int64_t arg4, int64_t arg5) {
+    // print colored
+    if (LOG_LEVEL <= 3) {
+        printf("\033[0;33m");
+        printf("openat(%ld, %ld, %ld, %ld)\n", dirfd, pathname, flags, mode);
+        // print the path
+        char *path = malloc(256);
+        memory_loads(cpu, pathname, path, 256);
+        printf("path: %s\n", path);
+        printf("\033[0m");
+    }
+    // get path
+    char *path = malloc(256);
+    memory_loads(cpu, pathname, path, 256);
+    // open file
+    int fd = open_file(path, flags, mode);
+    free(path);
+    return fd;
+}
+
+int64_t sys_read(Cpu *cpu, int64_t fd, int64_t buf, int64_t count, int64_t arg3, int64_t arg4, int64_t arg5) {
+    // print colored
+    if (LOG_LEVEL <= 3) {
+        printf("\033[0;33m");
+        printf("read(%ld, %ld, %ld)\n", fd, buf, count);
+        printf("\033[0m");
+    }
+    // read
+    read_file(fd, (char *) cpu->mem + buf, count);
+    return count;
+}
+
+void initialize_kernel() {
+    initialize_filesystem();
+}
 
 void do_syscall(Cpu *cpu) {
     int64_t return_value = -1;
@@ -122,6 +158,14 @@ void do_syscall(Cpu *cpu) {
         printf("\033[0m");
     }
     switch (syscall_num) {
+        case 56:
+            return_value = sys_openat(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
+        case 63:
+            return_value = sys_read(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
         case 64:
             return_value = sys_write(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
             break;

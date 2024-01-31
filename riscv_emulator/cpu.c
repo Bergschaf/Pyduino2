@@ -4,10 +4,12 @@
 
 #include "cpu.h"
 #include "decoder.h"
+#include "kernel.h"
 #include <execinfo.h>
 
 
 void load_elf_executable(char *filename, Cpu *cpu) {
+    initialize_kernel();
     ElfFile *file = malloc(sizeof(ElfFile));
     load_elf_file(filename, file);
     cpu->pc = file->entry_pos;
