@@ -29,11 +29,11 @@ instructions.o: instructions.c
 decoder.o: decoder.c instructions.c
 	$(CC) $(CFLAGS) -c decoder.c instructions.o -o decoder.o
 
-kernel.o: kernel.c filesystem.c
-	$(CC) $(CFLAGS) -c kernel.c filesystem.o -o kernel.o
+kernel.o: kernel.c filesystem.o
+	$(CC) $(CFLAGS)  -c kernel.c -o kernel.o
 
 filesystem.o: filesystem.c filesystem.h
-	$(CC) $(CFLAGS) -c filesystem.c
+	$(CC) $(CFLAGS) -c filesystem.c -o filesystem.o
 
 
 

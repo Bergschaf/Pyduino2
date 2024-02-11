@@ -3,6 +3,8 @@
 //
 
 #include "filesystem.h"
+File* entry_file;
+
 void create_file(char *name, char *content, int64_t size) {
     File *new_file = malloc(sizeof(File));
     if (entry_file == NULL) {
@@ -20,6 +22,7 @@ void create_file(char *name, char *content, int64_t size) {
 void initialize_filesystem() {
     //entry_file = NULL;
     create_file("/proc/sys/vm/overcommit_memory", "0\0", 2);
+    create_file("test.txt", "4242\0", 5);
 }
 
 File *get_file_from_fd(int fd) {

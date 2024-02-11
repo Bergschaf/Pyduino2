@@ -20,7 +20,7 @@ struct file_struct {
 typedef struct file_struct File;
 
 // all files
-File *entry_file;
+extern File *entry_file;
 
 int open_file(char*, int, int);
 
