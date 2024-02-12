@@ -4,7 +4,7 @@ from elf_loader import ELF_File
 import termcolor
 from kernel import Kernel
 
-LOG_LEVEL = 0
+LOG_LEVEL = 2
 BREAKPOINTS = []
 DISABLE_BREAKPOINTS = True
 STOP_EVERY_1000 = False

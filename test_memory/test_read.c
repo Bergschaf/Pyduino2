@@ -12,7 +12,7 @@ int main()
        // Program exits if the file pointer returns NULL.
        exit(1);
    }
-
+   printf("opened fil\n");
    fscanf(fptr,"%d", &num);
 
    printf("Value of n=%d", num);
