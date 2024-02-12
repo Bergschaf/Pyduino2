@@ -8,7 +8,7 @@
 
 int main() {
     Cpu *cpu = malloc(sizeof(Cpu));
-    load_elf_executable("../bin/python", cpu);
+    load_elf_executable("../bin/hello_world", cpu);
     run(cpu);
     return 111;
 }
