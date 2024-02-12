@@ -15,6 +15,7 @@ struct file_struct {
     char *name; // with path
     char *content;
     int64_t size;
+    int64_t offset;
     struct file_struct *next;
 };
 typedef struct file_struct File;
@@ -26,10 +27,12 @@ int open_file(char*, int, int);
 
 void initialize_filesystem();
 
-void close_file(int);
-
-void read_file(int fd, char *buf, int64_t count);
+int64_t read_file(int fd, char *buf, int64_t count);
 
 void create_file(char*, char*, int64_t);
+
+int64_t close_file(int fd);
+
+int64_t lseek_file(int fd, int64_t offset, int whence);
 
 #endif //RISCV_EMULATOR_FILESYSTEM_H

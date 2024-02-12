@@ -8,7 +8,7 @@
 
 int main() {
     Cpu *cpu = malloc(sizeof(Cpu));
-    load_elf_executable("../bin/test_read.o", cpu);
+    load_elf_executable("../bin/python", cpu);
     run(cpu);
     return 111;
 }

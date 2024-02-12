@@ -6,9 +6,14 @@
 #include "config.h"
 #include "util.h"
 
+
 int64_t sign_extend(int64_t num, int from) {
     // Sign extends to XLEN bits
     return num << (XLEN - from) >> (XLEN - from);
+}
+
+int8_t check_flag(int64_t flags, int64_t flag) {
+    return (flags & flag) == flag;
 }
 
 char* ljust(char *string, char *res, int size, char fillchar, char endchar) {

@@ -16,6 +16,8 @@
 struct cpu {
     int64_t pc;
     int64_t regs[32];
+    int64_t last_mmap;
+    int64_t curr_break;
     uint8_t mem[MEM_SIZE];
 };
 typedef struct cpu Cpu;
@@ -27,6 +29,8 @@ void memory_loads(Cpu *cpu, int64_t address, char *string, int64_t size);
 int64_t memory_loadw(Cpu *cpu, int64_t address);
 
 int64_t memory_loaddw(Cpu *cpu, int64_t address);
+
+int64_t memory_mmap_anonymous(Cpu *cpu, int64_t size);
 
 
 void load_elf_executable(char *filename, Cpu *cpu);

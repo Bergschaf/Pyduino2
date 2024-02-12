@@ -30,13 +30,15 @@ void load_elf_executable(char *filename, Cpu *cpu) {
             //printf("offset: 0x%lx\n", programHeader->offset);
             for (int j = 0; j < programHeader->fileSize; j++) {
                 cpu->mem[programHeader->vaddr + j] = file->data[programHeader->offset + j];
+                cpu->curr_break = programHeader->vaddr + j;
             }
         }
     }
     free(file->data);
     free(file);
     // Set sp to the end of the memory
-    cpu->regs[2] = MEM_SIZE - MEM_SIZE / 10;
+    cpu->last_mmap = MEM_SIZE - 1;
+    cpu->regs[2] = MEM_SIZE - STACK_SIZE;
 }
 
 uint64_t get_next_inst(Cpu *cpu) {
@@ -156,3 +158,12 @@ int64_t memory_loaddw(Cpu *cpu, int64_t address) {
 }
 
 
+int64_t memory_mmap_anonymous(Cpu *cpu, int64_t size) {
+    cpu->last_mmap -= size;
+    // set the memory to 0
+    for (int i = 0; i < size; i++) {
+        cpu->mem[cpu->last_mmap + i] = 0;
+    }
+    printf("mmap: 0x%lx\n", cpu->last_mmap - size);
+    return cpu->last_mmap - size;
+}

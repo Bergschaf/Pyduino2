@@ -24,7 +24,7 @@ cpu.o: cpu.c config.h
 	$(CC) $(CFLAGS) -c cpu.c
 
 instructions.o: instructions.c
-	$(CC) $(CFLAGS) -c instructions.c
+	$(CC) $(CFLAGS) -c instructions.c -o instructions.o
 
 decoder.o: decoder.c instructions.c
 	$(CC) $(CFLAGS) -c decoder.c instructions.o -o decoder.o
@@ -38,6 +38,7 @@ filesystem.o: filesystem.c filesystem.h
 
 
 clean:
+	rm -f *.o
 	rm -f main
 	rm -f debug
 	rm -f debug_elfLoader

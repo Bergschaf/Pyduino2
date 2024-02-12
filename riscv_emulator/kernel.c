@@ -3,9 +3,13 @@
 //
 
 #include "kernel.h"
-// import usleep
 #include "filesystem.h"
+// import usleep
 #include <unistd.h>
+// mmap flags
+#include <sys/mman.h>
+#include <utils.h>
+#include <time.h>
 
 int64_t sys_uname(Cpu *cpu, int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
     int size = 65;
@@ -27,6 +31,7 @@ int64_t sys_set_tid(int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int6
 }
 
 int64_t syscall_discard(int64_t arg0, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
+    exit(113);
     return -1;
 }
 
@@ -132,8 +137,104 @@ int64_t sys_read(Cpu *cpu, int64_t fd, int64_t buf, int64_t count, int64_t arg3,
         printf("\033[0m");
     }
     // read
-    read_file(fd, (char *) cpu->mem + buf, count);
-    return count;
+    return read_file(fd, (char *) cpu->mem + buf, count);
+}
+
+int64_t sys_close(Cpu *cpu, int64_t fd, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
+    // print colored
+    if (LOG_LEVEL <= 3) {
+        printf("\033[0;33m");
+        printf("close(%ld)\n", fd);
+        printf("\033[0m");
+    }
+    // close
+    int res = close_file(fd);
+    printf("close(%ld) = %d\n", fd, res);
+    return res;
+}
+
+int64_t sys_lseek(Cpu *cpu, int64_t fd, int64_t offset, int64_t whence, int64_t arg3, int64_t arg4, int64_t arg5) {
+    // print colored
+    if (LOG_LEVEL <= 3) {
+        printf("\033[0;33m");
+        printf("lseek(%ld, %ld, %ld)\n", fd, offset, whence);
+        printf("\033[0m");
+    }
+    // lseek
+    return lseek_file(fd, offset, whence);
+}
+
+int64_t sys_ioctl(Cpu *cpu, int64_t fd, int64_t request, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
+    // print colored
+    if (LOG_LEVEL <= 3) {
+        printf("\033[0;33m");
+        printf("ioctl(%ld, %ld)\n", fd, request);
+        printf("\033[0m");
+    }
+    return 0;
+}
+
+int64_t sys_sbrk(Cpu *cpu, int64_t addr, int64_t arg1, int64_t arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
+    // print colored
+    if (LOG_LEVEL <= 3) {
+        printf("\033[0;33m");
+        printf("brk(0x%lx)\n", addr);
+        printf("\033[0m");
+    }
+    if (addr == 0) {
+        printf("current break: 0x%lx\n", cpu->curr_break);
+        return cpu->curr_break;
+    } else {
+        cpu->curr_break += addr;
+        printf("new break: 0x%lx\n", cpu->curr_break);
+        return cpu->curr_break - addr;
+    }
+}
+
+int64_t sys_clock_gettime(Cpu *cpu, int64_t clk_id, int64_t tp) {
+    // print colored
+    if (LOG_LEVEL <= 3) {
+        printf("\033[0;33m");
+        printf("clock_gettime(%ld, %ld)\n", clk_id, tp);
+        printf("\033[0m");
+    }
+    long seconds = 12345;
+    long nanoseconds = 67890;
+    cpu->mem[tp] = seconds;
+    //memory_loaddw(cpu, tp + 8) = nanoseconds;
+    return 0;
+}
+
+int64_t sys_mmap(Cpu *cpu, int64_t addr, int64_t len, int64_t prot, int64_t flags, int64_t fd, int64_t offset) {
+    // print colored
+    if (LOG_LEVEL <= 3) {
+        printf("\033[0;33m");
+        printf("mmap(%ld, %ld, %ld, 0b%lb, %ld, %ld)\n", addr, len, prot, flags, fd, offset);
+        printf("\033[0m");
+    }
+    if (check_flag(flags, MAP_ANONYMOUS) && check_flag(flags, MAP_PRIVATE)) {
+        // allocate memory
+        if (addr != 0){
+            // print red
+            printf("\033[0;31m");
+            printf("mmap(%ld, %ld, %ld, 0b%lb, %ld, %ld)\n", addr, len, prot, flags, fd, offset);
+            printf("mmap addr not supported\n");
+            printf("\033[0m");
+            exit(42);
+            return -1;
+        }
+        return memory_mmap_anonymous(cpu, len);
+
+    } else {
+        // print red
+        printf("\033[0;31m");
+        printf("mmap(%ld, %ld, %ld, 0b%lb, %ld, %ld)\n", addr, len, prot, flags, fd, offset);
+        printf("mmap flags not supported\n");
+        printf("\033[0m");
+        exit(42);
+        return -1;
+    }
+    return 0;
 }
 
 void initialize_kernel() {
@@ -158,8 +259,20 @@ void do_syscall(Cpu *cpu) {
         printf("\033[0m");
     }
     switch (syscall_num) {
+        case 29:
+            return_value = sys_ioctl(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
         case 56:
             return_value = sys_openat(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
+        case 57:
+            return_value = sys_close(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
+        case 62:
+            return_value = sys_lseek(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
             break;
 
         case 63:
@@ -186,8 +299,20 @@ void do_syscall(Cpu *cpu) {
             return_value = sys_nanosleep(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
             break;
 
+        case 113:
+            return_value = sys_clock_gettime(cpu,arg0, arg1);
+            break;
+
         case 160:
             return_value = sys_uname(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
+        case 214:
+            return_value = sys_sbrk(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
+            break;
+
+        case 222:
+            return_value = sys_mmap(cpu, arg0, arg1, arg2, arg3, arg4, arg5);
             break;
 
         case 278:
