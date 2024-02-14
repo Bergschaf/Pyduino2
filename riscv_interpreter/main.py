@@ -4,7 +4,7 @@ from elf_loader import ELF_File
 import termcolor
 from kernel import Kernel
 
-LOG_LEVEL = 2
+LOG_LEVEL = 0
 BREAKPOINTS = []
 DISABLE_BREAKPOINTS = True
 STOP_EVERY_1000 = False
@@ -87,7 +87,7 @@ def run_test_file(file):
 
 
 if __name__ == '__main__':
-    file = "../bin/python"
+    file = "../bin/hello_world"
     kernel = init(file)
     # 0x156cc
     #exit()

@@ -8,12 +8,12 @@ mod cpu;
 mod filesystem;
 mod instructions;
 mod elfLoader;
+mod syscall;
 
 fn main() {
     // todo remove usize for arduino
     env_logger::init();
-    panic!("zero_register");
     let mut emu = emulator::Emulator::new();
-    emu.load_elf_file("../bin/hello_world");
+    emu.load_elf_file("../bin/sl");
     emu.run();
 }

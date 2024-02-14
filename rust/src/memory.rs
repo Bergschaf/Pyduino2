@@ -26,10 +26,15 @@ impl Memory {
     pub fn write_string(&mut self, address: usize, string: &str) {
         self.write(address, string.as_bytes());
     }
-    pub fn read_string(&self, address: usize) -> String {
+    pub fn read_string(&self, address: usize, count: usize) -> String {
         let mut size = 0;
+        let mut c = 0;
         while self.data[address + size] != 0 {
             size += 1;
+            c += 1;
+            if c > count {
+                break;
+            }
         }
         String::from_utf8(self.data[address..address + size].to_vec()).unwrap()
     }

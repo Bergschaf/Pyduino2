@@ -3,6 +3,7 @@ use crate::memory;
 use crate::cpu;
 use crate::cpu::Cpu;
 use crate::elfLoader;
+use crate::instructions;
 
 pub struct Emulator {
     pub kernel: kernel::Kernel,
@@ -28,7 +29,14 @@ impl Emulator {
 
     pub fn run(&mut self) {
         loop {
-            Cpu::next_instruction(self);
+            let inst = Cpu::next_instruction(self);
+            let prev_pc = self.cpu.pc;
+            instructions::execute_instruction(inst, self);
+            self.cpu.registers[0] = 0;
+            if self.cpu.pc == prev_pc {
+                self.cpu.pc += 4;
+            }
+            //self.cpu.print_registers();
         }
     }
 }

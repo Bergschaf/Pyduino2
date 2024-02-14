@@ -14,13 +14,20 @@ impl Cpu {
             pc: 0,
         }
     }
-    pub fn next_instruction(emulator: &mut Emulator) {
+    pub fn next_instruction(emulator: &mut Emulator) -> Instruction {
         let instruction = emulator.memory.read_u64(emulator.cpu.pc as usize);
         let inst:Instruction = instructions::decode_instruction(instruction);
-        print!("Instruction: {:?}\n", inst);
+        //print!("Instruction: {:?}\n", inst);
+        //print!("PC: 0x{:0x}\n", emulator.cpu.pc);
+        return inst;
+    }
 
-
-
-        emulator.cpu.pc += 4;
+    pub fn print_registers(&self) {
+        for i in 0..32 {
+            if self.registers[i] == 0 {
+                continue;
+            }
+            print!("    x{}: 0x{:0x}\n", i, self.registers[i]);
+        }
     }
 }

@@ -1,5 +1,6 @@
 use crate::cpu::Cpu;
 use crate::emulator::Emulator;
+use crate::kernel::do_syscall;
 
 pub fn sign_extend(val: u64, from: u8) -> i64 {
     let shift = 64 - from;
@@ -225,16 +226,16 @@ pub fn decode_instruction(inst: u64) -> Instruction {
                 0b010 => Instruction::SLTI(inst),
                 0b011 => Instruction::SLTIU(inst),
                 0b100 => Instruction::XORI(inst),
-                0b110 => {
+                0b101 => {
                     if (inst.imm >> 5) & 0b1111111 == 0 {
                         Instruction::SRLI(inst)
                     } else {
                         Instruction::SRAI(inst)
                     }
                 }
-                0b111 => Instruction::ORI(inst),
+                0b110 => Instruction::ORI(inst),
                 0b001 => Instruction::SLLI(inst),
-                0b101 => Instruction::ANDI(inst),
+                0b111 => Instruction::ANDI(inst),
                 _ => panic!("Unknown funct3 for I-type instruction"),
             }
         }
@@ -266,12 +267,11 @@ pub fn decode_instruction(inst: u64) -> Instruction {
         }
         0b0001111 => Instruction::FENCE,
         0b1110011 => {
-            let inst = inst >> 20;
-            match inst {
-                0b000000000000 => Instruction::FENCE_I,
-                0b000000000001 => Instruction::ECALL,
-                0b000000000010 => Instruction::EBREAK,
-                _ => panic!("Unknown funct3 for I-type instruction"),
+            // TODO everything is ecall now
+            if (inst >> 20) & 0xfff == 0 {
+                Instruction::ECALL
+            } else {
+                panic!("Why is this not an ecall")
             }
         }
         0b0011011 => {
@@ -315,9 +315,9 @@ pub fn decode_instruction(inst: u64) -> Instruction {
 }
 
 
-fn execute_instruction(inst: Instruction,emulator: Emulator) {
-    let mut cpu = emulator.cpu;
-    let mut memory = emulator.memory;
+pub fn execute_instruction(inst: Instruction, emulator: &mut Emulator) {
+    let cpu = &mut emulator.cpu;
+    let memory = &mut emulator.memory;
     match inst {
         Instruction::AUIPC(u_type) => {
             cpu.registers[u_type.rd as usize] = cpu.pc + u_type.imm as i64;
@@ -406,7 +406,9 @@ fn execute_instruction(inst: Instruction,emulator: Emulator) {
         Instruction::FENCE => {}
         Instruction::FENCE_I => {}
         Instruction::ECALL => {
-            panic!("ECALL");
+            let syscall_number = cpu.registers[17];
+            let args = [cpu.registers[10], cpu.registers[11], cpu.registers[12], cpu.registers[13], cpu.registers[14], cpu.registers[15]];
+            do_syscall(emulator, syscall_number, args);
         }
         Instruction::EBREAK => {
             panic!("EBREAK");
