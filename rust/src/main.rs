@@ -14,6 +14,6 @@ fn main() {
     // todo remove usize for arduino
     env_logger::init();
     let mut emu = emulator::Emulator::new();
-    emu.load_elf_file("../bin/sl");
+    emu.load_elf_file("../bin/hello_world");
     emu.run();
 }
