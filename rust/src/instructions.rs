@@ -1,8 +1,13 @@
-
+use crate::cpu::Cpu;
+use crate::emulator::Emulator;
 
 pub fn sign_extend(val: u64, from: u8) -> i64 {
     let shift = 64 - from;
     ((val << shift) as i64 >> shift)
+}
+
+fn crop_to_32_and_sign_extend(val: i64) -> i64 {
+    sign_extend(val as u64, 32) as i64
 }
 
 #[derive(Debug)]
@@ -90,7 +95,7 @@ pub fn parse_s_type(inst: u64) -> SType {
 pub fn parse_b_type(inst: u64) -> BType {
     BType {
         opcode: (inst & 0b1111111) as u8,
-        imm: sign_extend((((inst >> 8) & 0b1111) | ((inst >> 25) & 0b111111) << 4 | ((inst >> 7) & 0b1) << 10 | ((inst >> 31) & 0b1) << 11), 12) as i32,
+        imm: sign_extend((((inst >> 8) & 0b1111) | ((inst >> 25) & 0b111111) << 4 | ((inst >> 7) & 0b1) << 10 | ((inst >> 31) & 0b1) << 11) << 1, 13) as i32,
         funct3: ((inst >> 12) & 0b111) as u8,
         rs1: ((inst >> 15) & 0b11111) as u8,
         rs2: ((inst >> 20) & 0b11111) as u8,
@@ -109,7 +114,7 @@ pub fn parse_j_type(inst: u64) -> JType {
     JType {
         opcode: (inst & 0b1111111) as u8,
         rd: ((inst >> 7) & 0b11111) as u8,
-        imm: sign_extend((((inst >> 21) & 0b1111111111) | ((inst >> 20) & 0b1) << 10 | ((inst >> 12) & 0b11111111) << 11 | ((inst >> 31) & 0b1) << 19) << 12, 32) as i32,
+        imm: sign_extend((((inst >> 21) & 0b1111111111) | ((inst >> 20) & 0b1) << 10 | ((inst >> 12) & 0b11111111) << 11 | ((inst >> 31) & 0b1) << 19) << 1, 21) as i32,
     }
 }
 
@@ -306,5 +311,207 @@ pub fn decode_instruction(inst: u64) -> Instruction {
             }
         }
         _ => panic!("Unknown opcode"),
+    }
+}
+
+
+fn execute_instruction(inst: Instruction,emulator: Emulator) {
+    let mut cpu = emulator.cpu;
+    let mut memory = emulator.memory;
+    match inst {
+        Instruction::AUIPC(u_type) => {
+            cpu.registers[u_type.rd as usize] = cpu.pc + u_type.imm as i64;
+        }
+        Instruction::LUI(u_type) => {
+            cpu.registers[u_type.rd as usize] = u_type.imm as i64;
+        }
+        Instruction::ADDI(i_type) => {
+            cpu.registers[i_type.rd as usize] = cpu.registers[i_type.rs1 as usize] + i_type.imm as i64;
+        }
+        Instruction::ADDIW(i_type) => {
+            cpu.registers[i_type.rd as usize] = crop_to_32_and_sign_extend(cpu.registers[i_type.rs1 as usize] + i_type.imm as i64);
+        }
+        Instruction::ADD(r_type) => {
+            cpu.registers[r_type.rd as usize] = cpu.registers[r_type.rs1 as usize] + cpu.registers[r_type.rs2 as usize];
+        }
+        Instruction::ADDW(r_type) => {
+            cpu.registers[r_type.rd as usize] = crop_to_32_and_sign_extend(cpu.registers[r_type.rs1 as usize] + cpu.registers[r_type.rs2 as usize]);
+        }
+        Instruction::SUB(r_type) => {
+            cpu.registers[r_type.rd as usize] = cpu.registers[r_type.rs1 as usize] - cpu.registers[r_type.rs2 as usize];
+        }
+        Instruction::SUBW(r_type) => {
+            cpu.registers[r_type.rd as usize] = crop_to_32_and_sign_extend(cpu.registers[r_type.rs1 as usize] - cpu.registers[r_type.rs2 as usize]);
+        }
+        Instruction::SLLI(i_type) => {
+            cpu.registers[i_type.rd as usize] = cpu.registers[i_type.rs1 as usize] << (i_type.imm & 0b111111);
+        }
+        Instruction::SLLIW(i_type) => {
+            cpu.registers[i_type.rd as usize] = crop_to_32_and_sign_extend(cpu.registers[i_type.rs1 as usize] << (i_type.imm & 0b111111));
+        }
+        Instruction::SLL(r_type) => {
+            cpu.registers[r_type.rd as usize] = cpu.registers[r_type.rs1 as usize] << (cpu.registers[r_type.rs2 as usize] & 0b111111);
+        }
+        Instruction::SLLW(r_type) => {
+            cpu.registers[r_type.rd as usize] = crop_to_32_and_sign_extend(cpu.registers[r_type.rs1 as usize] << (cpu.registers[r_type.rs2 as usize] & 0b111111));
+        }
+        Instruction::SRLI(i_type) => {
+            cpu.registers[i_type.rd as usize] = (cpu.registers[i_type.rs1 as usize] as u64 >> (i_type.imm & 0b111111)) as i64;
+        }
+        Instruction::SRAI(i_type) => {
+            cpu.registers[i_type.rd as usize] = cpu.registers[i_type.rs1 as usize] >> (i_type.imm & 0b111111);
+        }
+        Instruction::SRL(r_type) => {
+            cpu.registers[r_type.rd as usize] = (cpu.registers[r_type.rs1 as usize] as u64 >> (cpu.registers[r_type.rs2 as usize] & 0b111111)) as i64;
+        }
+        Instruction::SRLW(r_type) => {
+            cpu.registers[r_type.rd as usize] = crop_to_32_and_sign_extend((cpu.registers[r_type.rs1 as usize] as u64 >> (cpu.registers[r_type.rs2 as usize] & 0b111111)) as i64);
+        }
+        Instruction::SRA(r_type) => {
+            cpu.registers[r_type.rd as usize] = cpu.registers[r_type.rs1 as usize] >> (cpu.registers[r_type.rs2 as usize] & 0b111111);
+        }
+        Instruction::SRAW(r_type) => {
+            cpu.registers[r_type.rd as usize] = crop_to_32_and_sign_extend(cpu.registers[r_type.rs1 as usize] >> (cpu.registers[r_type.rs2 as usize] & 0b111111));
+        }
+        Instruction::SLTI(i_type) => {
+            cpu.registers[i_type.rd as usize] = if cpu.registers[i_type.rs1 as usize] < i_type.imm as i64 { 1 } else { 0 };
+        }
+        Instruction::SLTIU(i_type) => {
+            cpu.registers[i_type.rd as usize] = if (cpu.registers[i_type.rs1 as usize] as u64) < i_type.imm as u64 { 1 } else { 0 };
+        }
+        Instruction::XORI(i_type) => {
+            cpu.registers[i_type.rd as usize] = cpu.registers[i_type.rs1 as usize] ^ (i_type.imm as i64);
+        }
+        Instruction::ORI(i_type) => {
+            cpu.registers[i_type.rd as usize] = cpu.registers[i_type.rs1 as usize] | (i_type.imm as i64);
+        }
+        Instruction::ANDI(i_type) => {
+            cpu.registers[i_type.rd as usize] = cpu.registers[i_type.rs1 as usize] & (i_type.imm as i64);
+        }
+        Instruction::SLT(r_type) => {
+            cpu.registers[r_type.rd as usize] = if cpu.registers[r_type.rs1 as usize] < cpu.registers[r_type.rs2 as usize] { 1 } else { 0 };
+        }
+        Instruction::SLTU(r_type) => {
+            cpu.registers[r_type.rd as usize] = if (cpu.registers[r_type.rs1 as usize] as u64) < cpu.registers[r_type.rs2 as usize] as u64 { 1 } else { 0 };
+        }
+        Instruction::XOR(r_type) => {
+            cpu.registers[r_type.rd as usize] = cpu.registers[r_type.rs1 as usize] ^ cpu.registers[r_type.rs2 as usize];
+        }
+        Instruction::OR(r_type) => {
+            cpu.registers[r_type.rd as usize] = cpu.registers[r_type.rs1 as usize] | cpu.registers[r_type.rs2 as usize];
+        }
+        Instruction::AND(r_type) => {
+            cpu.registers[r_type.rd as usize] = cpu.registers[r_type.rs1 as usize] & cpu.registers[r_type.rs2 as usize];
+        }
+        Instruction::FENCE => {}
+        Instruction::FENCE_I => {}
+        Instruction::ECALL => {
+            panic!("ECALL");
+        }
+        Instruction::EBREAK => {
+            panic!("EBREAK");
+        }
+        Instruction::JAL(j_type) => {
+            cpu.registers[j_type.rd as usize] = cpu.pc + 4;
+            cpu.pc += j_type.imm as i64;
+        }
+        Instruction::JALR(i_type) => {
+            cpu.registers[i_type.rd as usize] = cpu.pc + 4;
+            cpu.pc = (cpu.registers[i_type.rs1 as usize] + i_type.imm as i64) & !1;
+        }
+        Instruction::BEQ(b_type) => {
+            if cpu.registers[b_type.rs1 as usize] == cpu.registers[b_type.rs2 as usize] {
+                cpu.pc += b_type.imm as i64;
+            }
+        }
+        Instruction::BNE(b_type) => {
+            if cpu.registers[b_type.rs1 as usize] != cpu.registers[b_type.rs2 as usize] {
+                cpu.pc += b_type.imm as i64;
+            }
+        }
+        Instruction::BLT(b_type) => {
+            if cpu.registers[b_type.rs1 as usize] < cpu.registers[b_type.rs2 as usize] {
+                cpu.pc += b_type.imm as i64;
+            }
+        }
+        Instruction::BGE(b_type) => {
+            if cpu.registers[b_type.rs1 as usize] >= cpu.registers[b_type.rs2 as usize] {
+                cpu.pc += b_type.imm as i64;
+            }
+        }
+        Instruction::BLTU(b_type) => {
+            if (cpu.registers[b_type.rs1 as usize] as u64) < cpu.registers[b_type.rs2 as usize] as u64 {
+                cpu.pc += b_type.imm as i64;
+            }
+        }
+        Instruction::BGEU(b_type) => {
+            if (cpu.registers[b_type.rs1 as usize] as u64) >= cpu.registers[b_type.rs2 as usize] as u64 {
+                cpu.pc += b_type.imm as i64;
+            }
+        }
+
+        Instruction::LB(i_type) => {
+            let address = (cpu.registers[i_type.rs1 as usize] + i_type.imm as i64);
+            let data = memory.read(address.try_into().unwrap(), 1);
+            cpu.registers[i_type.rd as usize] = sign_extend(data[0] as u64, 8) as i64;
+        }
+        Instruction::LH(i_type) => {
+            let address = (cpu.registers[i_type.rs1 as usize] + i_type.imm as i64);
+            let data = memory.read(address.try_into().unwrap(), 2);
+            cpu.registers[i_type.rd as usize] = sign_extend(u16::from_le_bytes([data[0], data[1]]) as u64, 16);
+        }
+        Instruction::LW(i_type) => {
+            let address = (cpu.registers[i_type.rs1 as usize] + i_type.imm as i64);
+            let data = memory.read(address.try_into().unwrap(), 4);
+            cpu.registers[i_type.rd as usize] = sign_extend(u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as u64, 32) as i64;
+        }
+        Instruction::LD(i_type) => {
+            let address = (cpu.registers[i_type.rs1 as usize] + i_type.imm as i64);
+            let data = memory.read(address.try_into().unwrap(), 8);
+            cpu.registers[i_type.rd as usize] = u64::from_le_bytes([data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]]) as i64;
+        }
+        Instruction::LBU(i_type) => {
+            let address = (cpu.registers[i_type.rs1 as usize] + i_type.imm as i64);
+            let data = memory.read(address.try_into().unwrap(), 1);
+            cpu.registers[i_type.rd as usize] = u64::from(data[0]) as i64;
+        }
+        Instruction::LHU(i_type) => {
+            let address = (cpu.registers[i_type.rs1 as usize] + i_type.imm as i64);
+            let data = memory.read(address.try_into().unwrap(), 2);
+            cpu.registers[i_type.rd as usize] = u16::from_le_bytes([data[0], data[1]]) as i64;
+        }
+        Instruction::LWU(i_type) => {
+            let address = (cpu.registers[i_type.rs1 as usize] + i_type.imm as i64);
+            let data = memory.read(address.try_into().unwrap(), 4);
+            cpu.registers[i_type.rd as usize] = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as i64;
+        }
+
+        Instruction::SB(s_type) => {
+            let address = (cpu.registers[s_type.rs1 as usize] + s_type.imm as i64);
+            let data = cpu.registers[s_type.rs2 as usize] as u8;
+            memory.write(address.try_into().unwrap(), &[data]);
+        }
+        Instruction::SH(s_type) => {
+            let address = (cpu.registers[s_type.rs1 as usize] + s_type.imm as i64);
+            let data = cpu.registers[s_type.rs2 as usize] as u16;
+            memory.write(address.try_into().unwrap(), &data.to_le_bytes());
+        }
+        Instruction::SW(s_type) => {
+            let address = (cpu.registers[s_type.rs1 as usize] + s_type.imm as i64);
+            let data = cpu.registers[s_type.rs2 as usize] as u32;
+            memory.write(address.try_into().unwrap(), &data.to_le_bytes());
+        }
+        Instruction::SD(s_type) => {
+            let address = (cpu.registers[s_type.rs1 as usize] + s_type.imm as i64);
+            let data = cpu.registers[s_type.rs2 as usize] as u64;
+            memory.write(address.try_into().unwrap(), &data.to_le_bytes());
+        }
+
+        Instruction::SRLIW(i_type) => {
+            cpu.registers[i_type.rd as usize] = crop_to_32_and_sign_extend(((cpu.registers[i_type.rs1 as usize] as u64) >> (i_type.imm & 0b111111)) as i64);
+        }
+        Instruction::SRAIW(i_type) => {
+            cpu.registers[i_type.rd as usize] = crop_to_32_and_sign_extend((cpu.registers[i_type.rs1 as usize] >> (i_type.imm & 0b111111)) as i64);
+        }
     }
 }

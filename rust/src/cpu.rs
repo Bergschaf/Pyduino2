@@ -3,8 +3,8 @@ use crate::instructions;
 use crate::instructions::Instruction;
 
 pub struct Cpu {
-    pub registers: [u64; 32],
-    pub pc: u64,
+    pub registers: [i64; 32], // TODO zero_register
+    pub pc: i64,
 }
 
 impl Cpu {

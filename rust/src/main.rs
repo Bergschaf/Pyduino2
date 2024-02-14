@@ -1,3 +1,4 @@
+use std::process::exit;
 use log::debug;
 
 mod emulator;
@@ -9,8 +10,9 @@ mod instructions;
 mod elfLoader;
 
 fn main() {
+    // todo remove usize for arduino
     env_logger::init();
-
+    panic!("zero_register");
     let mut emu = emulator::Emulator::new();
     emu.load_elf_file("../bin/hello_world");
     emu.run();

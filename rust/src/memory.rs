@@ -1,12 +1,12 @@
 pub struct Memory {
     data: Vec<u8>,
 }
-pub const MEMORY_SIZE: usize = 1024 * 1024 * 1024; // 1GB TODO may be slow
-pub const STACK_SIZE: usize = 1024 * 1024; // 1MB
+pub const MEMORY_SIZE: i64 = 1024 * 1024 * 1024; // 1GB TODO may be slow
+pub const STACK_SIZE: i64 = 1024 * 1024; // 1MB
 impl Memory {
     pub fn new() -> Memory {
         Memory {
-            data: vec![0; MEMORY_SIZE],
+            data: vec![0; MEMORY_SIZE as usize],
         }
     }
     pub fn write(&mut self, address: usize, data: &[u8]) {

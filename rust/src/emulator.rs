@@ -22,8 +22,8 @@ impl Emulator {
     pub fn load_elf_file(&mut self, filename: &str) {
         let elf = elfLoader::load_elf_file(filename);
         elf.load_into_memory(&mut self.memory);
-        self.cpu.pc = elf.entry_point as u64;
-        self.cpu.registers[2] = memory::MEMORY_SIZE as u64 - memory::STACK_SIZE as u64;
+        self.cpu.pc = elf.entry_point as i64;
+        self.cpu.registers[2] = memory::MEMORY_SIZE - memory::STACK_SIZE;
     }
 
     pub fn run(&mut self) {
