@@ -14,6 +14,6 @@ fn main() {
     // todo remove usize for arduino
     env_logger::init();
     let mut emu = emulator::Emulator::new();
-    emu.load_elf_file("../bin/test_read.o");
+    emu.load_elf_file("../bin/vmlinux");
     emu.run();
 }

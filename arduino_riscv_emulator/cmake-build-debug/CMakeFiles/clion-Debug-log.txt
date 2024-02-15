@@ -1,0 +1,4 @@
+/home/bergschaf/.local/share/JetBrains/Toolbox/apps/clion/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/home/bergschaf/.local/share/JetBrains/Toolbox/apps/clion/bin/ninja/linux/x64/ninja -G Ninja -S /home/bergschaf/PycharmProjects/Pyduino2/arduino_riscv_emulator -B /home/bergschaf/PycharmProjects/Pyduino2/arduino_riscv_emulator/cmake-build-debug
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/bergschaf/PycharmProjects/Pyduino2/arduino_riscv_emulator/cmake-build-debug

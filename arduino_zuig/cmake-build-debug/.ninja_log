@@ -1,0 +1,10 @@
+# ninja log v5
+0	18	1705154697703902947	build.ninja	27adaf5ed66364b7
+15	36	1705150415296674151	/home/bergschaf/PycharmProjects/Pyduino2/arduino_zuig/bin/ATMega_Serial	3d6ebda6d09554d4
+0	15	1705150415290007535	CMakeFiles/ATMega_Serial.dir/test.c.o	504b99f7e9fa286f
+0	24	1705154713937103056	CMakeFiles/ATMega_Serial.dir/test.c.o	504b99f7e9fa286f
+24	35	1705154713940436361	/home/bergschaf/PycharmProjects/Pyduino2/arduino_zuig/bin/ATMega_Serial	3d6ebda6d09554d4
+0	19	1705160448584893393	CMakeFiles/ATMega_Serial.dir/test.c.o	504b99f7e9fa286f
+19	32	1705160448594893307	/home/bergschaf/PycharmProjects/Pyduino2/arduino_zuig/bin/ATMega_Serial	3d6ebda6d09554d4
+0	22	1705161783970212705	CMakeFiles/ATMega_Serial.dir/test.c.o	504b99f7e9fa286f
+22	34	1705161783976879314	/home/bergschaf/PycharmProjects/Pyduino2/arduino_zuig/bin/ATMega_Serial	3d6ebda6d09554d4

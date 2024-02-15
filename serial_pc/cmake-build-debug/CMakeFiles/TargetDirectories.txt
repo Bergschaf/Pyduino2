@@ -1,0 +1,3 @@
+/home/bergschaf/PycharmProjects/Pyduino2/serial_pc/cmake-build-debug/CMakeFiles/Serial.dir
+/home/bergschaf/PycharmProjects/Pyduino2/serial_pc/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/bergschaf/PycharmProjects/Pyduino2/serial_pc/cmake-build-debug/CMakeFiles/rebuild_cache.dir

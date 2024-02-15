@@ -1,0 +1,3 @@
+/home/bergschaf/PycharmProjects/Pyduino2/arduino_zuig/cmake-build-debug/CMakeFiles/ATMega_Serial.dir
+/home/bergschaf/PycharmProjects/Pyduino2/arduino_zuig/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/bergschaf/PycharmProjects/Pyduino2/arduino_zuig/cmake-build-debug/CMakeFiles/rebuild_cache.dir

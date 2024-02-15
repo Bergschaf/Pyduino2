@@ -12,6 +12,7 @@ pub struct File {
     offset: usize,
 }
 
+#[derive(Debug)]
 pub enum AccessMode {
     Read,
     Write,
@@ -19,19 +20,21 @@ pub enum AccessMode {
 }
 
 pub struct FileCreationFlags {
-    create: bool,
+    pub create: bool,
 }
 
 pub struct FileStatusFlags {
-    append: bool,
+    pub append: bool,
 }
 
 impl Filesystem {
     pub fn new() -> Filesystem {
-        Filesystem {
+        let mut fs = Filesystem {
             files: Vec::new(),
             open_files: HashMap::new(),
-        }
+        };
+        fs.create_file("test.txt", b"Hello, World!\n".to_vec());
+        fs
     }
     pub fn create_file(&mut self, name: &str, data: Vec<u8>) {
         self.files.push(File {
@@ -107,5 +110,6 @@ impl Filesystem {
     pub fn close_file(&mut self, fd: i32) {
         self.open_files.remove(&fd);
     }
+
 
 }

@@ -32,11 +32,18 @@ pub fn do_syscall(emulator: &mut Emulator, syscall_num: i64, args: [i64; 6]){
         Syscall::Openat => {
             syscall_openat(emulator, args)
         },
+        Syscall::Brk => {
+            syscall_brk(emulator, args)
+        },
+        Syscall::Mmap => {
+            syscall_mmap(emulator, args)
+        },
         Syscall::Unknown => {
             print!("Unknown syscall {}\n", syscall_num);
             -1
         },
     };
+    print!("Return value: {}\n", return_value);
     emulator.cpu.registers[10] = return_value;
 }
 
