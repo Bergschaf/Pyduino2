@@ -3,7 +3,7 @@ use crate::filesystem::Filesystem;
 use crate::syscall::*;
 
 pub struct Kernel {
-    filesystem: Filesystem,
+    pub filesystem: Filesystem,
 }
 
 
@@ -28,6 +28,9 @@ pub fn do_syscall(emulator: &mut Emulator, syscall_num: i64, args: [i64; 6]){
         },
         Syscall::Exit => {
             syscall_exit(emulator, args)
+        },
+        Syscall::Openat => {
+            syscall_openat(emulator, args)
         },
         Syscall::Unknown => {
             print!("Unknown syscall {}\n", syscall_num);
