@@ -44,6 +44,9 @@ impl Emulator {
         loop {
             let (inst, was_compressed) = Cpu::next_instruction(self);
             let prev_pc = self.cpu.pc;
+            print!("Compressed: {}\n", was_compressed);
+            print!("Inst: 0x{:x?}\n", inst);
+            print!("PC: 0x{:0x}\n", self.cpu.pc);
             instructions::execute_instruction(inst, self);
             self.cpu.registers[0] = 0;
             if self.cpu.pc == prev_pc {

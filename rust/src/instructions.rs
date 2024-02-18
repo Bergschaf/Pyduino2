@@ -312,13 +312,13 @@ pub fn decode_compressed_instruction(inst: u64) -> Option<Instruction> {
                             }))
                         } else {
                             // C.MV
-                            Some(Instruction::ADD / RType {
+                            Some(Instruction::ADD(RType {
                                 rd: rsd,
                                 funct3: 0b000,
                                 rs1: rs2,
                                 rs2: 0,
                                 funct7: 0b0000000,
-                            })
+                            }))
                         }
                     } else {
                         if (rsd == 0 && rs2 == 0) {
@@ -334,13 +334,13 @@ pub fn decode_compressed_instruction(inst: u64) -> Option<Instruction> {
                             }))
                         } else {
                             // C.ADD
-                            Some(Instruction::ADD / RType {
+                            Some(Instruction::ADD(RType {
                                 rd: rsd,
                                 funct3: 0b000,
                                 rs1: rsd,
                                 rs2: rs2,
                                 funct7: 0b0000000,
-                            })
+                            }))
                         }
                     }
                 }
@@ -447,7 +447,7 @@ pub fn decode_compressed_instruction(inst: u64) -> Option<Instruction> {
                     let funct_2 = ((inst >> 10) & 0b11) as u8;
                     let inst_12 = ((inst >> 12) & 0b1) as u8;
                     let rsd = ((inst >> 7) & 0b111) as u8;
-                    let imm_start = (inst >> 2) & 0b11111;
+                    let imm_start = ((inst >> 2) & 0b11111) as u8;
                     match funct_2 {
                         0b00 => {
                             // C.SRLI
@@ -486,7 +486,7 @@ pub fn decode_compressed_instruction(inst: u64) -> Option<Instruction> {
                             match another_funct_2 {
                                 0b00 => {
                                     // C.SUB or C.SUBW
-                                    if (inst_12) {
+                                    if (inst_12 == 1) {
                                         Some(Instruction::SUBW(RType {
                                             rd: map_rvc_register(rsd),
                                             funct3: 0b000,
@@ -506,7 +506,7 @@ pub fn decode_compressed_instruction(inst: u64) -> Option<Instruction> {
                                 }
                                 0b01 => {
                                     // C.XOR or C.ADDW
-                                    if (inst_12) {
+                                    if (inst_12 == 1) {
                                         Some(Instruction::ADDW(RType {
                                             rd: map_rvc_register(rsd),
                                             funct3: 0b100,
@@ -526,7 +526,7 @@ pub fn decode_compressed_instruction(inst: u64) -> Option<Instruction> {
                                 }
                                 0b10 => {
                                     // C.OR or reserved
-                                    if (inst_12) {
+                                    if (inst_12 == 1) {
                                         panic!("reserved")
                                     } else {
                                         Some(Instruction::OR(RType {
@@ -540,7 +540,7 @@ pub fn decode_compressed_instruction(inst: u64) -> Option<Instruction> {
                                 }
                                 0b11 => {
                                     // C.AND or reserved
-                                    if (inst_12) {
+                                    if (inst_12 == 1) {
                                         panic!("reserved")
                                     } else {
                                         Some(Instruction::AND(RType {
@@ -831,6 +831,7 @@ pub fn execute_instruction(inst: Instruction, emulator: &mut Emulator) {
     let cpu = &mut emulator.cpu;
     let memory = &mut emulator.memory;
     match inst {
+        Instruction::NOP => {}
         Instruction::AUIPC(u_type) => {
             cpu.registers[u_type.rd as usize] = cpu.pc + u_type.imm as i64;
         }

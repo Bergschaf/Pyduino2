@@ -19,6 +19,6 @@ fn main() {
 
     let mut emu = emulator::Emulator::new();
     //emu.load_elf_file("../bin/vmlinux");
-    //emu.load_elf_file("../bin/Image");
+    emu.load_pe32_file("../bin/Image");
     emu.run();
 }

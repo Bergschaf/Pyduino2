@@ -19,11 +19,14 @@ impl Cpu {
     pub fn next_instruction(emulator: &mut Emulator) -> (Instruction, bool){
         let instruction = emulator.memory.read_u64(emulator.cpu.pc as usize);
         let inst_comp = instructions::decode_compressed_instruction(instruction);
-        if inst_comp == None {
-            return (instructions::decode_instruction(instruction), true);
-        }
-        else {
-            return (inst_comp.unwrap(), false);
+        match inst_comp {
+            Some(inst) => {
+                (inst, true)
+            },
+            None => {
+                let inst = instructions::decode_instruction(instruction);
+                (inst, false)
+            }
         }
     }
 
