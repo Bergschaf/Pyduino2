@@ -50,6 +50,7 @@ pub fn syscall_writev(emulator: &mut Emulator, args: [i64; 6]) -> i64 {
         // print green
         print!("\x1b[1;32m{}\x1b[0m", string);
         written += string.len();
+        return written as i64;
     };
     written as i64
 }
@@ -114,9 +115,9 @@ pub fn syscall_mmap(emulator: &mut Emulator, args: [i64; 6]) -> i64 {
     {
         panic!("mmap flags are not supported");
     };
-
-    let addr = emulator.memory.last_mmap - length;
-    emulator.memory.last_mmap = addr;
+    panic!("mmap not supported");
+    //let addr = emulator.memory.last_mmap - length;
+    //emulator.memory.last_mmap = addr;
     print!("mmap addr: {:x} length: {:x}\n", addr as usize, length);
     emulator.memory.write(addr as usize, &vec![0; length as usize]);
     addr

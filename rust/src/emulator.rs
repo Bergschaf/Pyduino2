@@ -3,6 +3,7 @@ use crate::memory;
 use crate::cpu;
 use crate::cpu::Cpu;
 use crate::elfLoader;
+use crate::pe32Loader;
 use crate::instructions;
 
 pub struct Emulator {
@@ -24,7 +25,19 @@ impl Emulator {
         let elf = elfLoader::load_elf_file(filename);
         elf.load_into_memory(&mut self.memory);
         self.cpu.pc = elf.entry_point as i64;
-        self.cpu.registers[2] = memory::MEMORY_SIZE - memory::STACK_SIZE;
+
+        let stack_adress = 0x1000000;
+        let stack_size = 0x10000;
+        self.memory.create_mapping(stack_size, stack_adress);
+        self.cpu.registers[2] = stack_adress + stack_size - 0x1000;
+    }
+
+    pub fn load_pe32_file(&mut self, filename: &str) {
+        let pe32 = pe32Loader::load_p32_file(filename);
+        pe32.load_into_memory(&mut self.memory);
+        self.cpu.pc = pe32.optional_header.address_of_entry_point as i64;
+        print!("Entry point: 0x{:0x}\n", self.cpu.pc);
+        //self.cpu.registers[2] = memory::MEMORY_SIZE - memory::STACK_SIZE;
     }
 
     pub fn run(&mut self) {

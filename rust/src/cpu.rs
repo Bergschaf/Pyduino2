@@ -16,9 +16,10 @@ impl Cpu {
     }
     pub fn next_instruction(emulator: &mut Emulator) -> Instruction {
         let instruction = emulator.memory.read_u64(emulator.cpu.pc as usize);
+        print!("Instruction: {:b}",instruction);
         let inst:Instruction = instructions::decode_instruction(instruction);
-        //print!("Instruction: {:?}\n", inst);
-        //print!("PC: 0x{:0x}\n", emulator.cpu.pc);
+        print!("Instruction: {:?}\n", inst);
+        print!("PC: 0x{:0x}\n", emulator.cpu.pc);
         return inst;
     }
 

@@ -87,6 +87,7 @@ impl ElfFile {
         for i in 0..self.program_header_count {
             let header = &self.program_headers[i as usize];
             if header.p_type == 1 {
+                memory.create_mapping(header.p_memsz as i64, header.p_vaddr as i64);
                 memory.write(header.p_vaddr, &self.data[header.p_offset..header.p_offset + header.p_filesz]);
             }
         }

@@ -175,6 +175,14 @@ pub enum Instruction {
     SLLW(RType),
     SRLW(RType),
     SRAW(RType),
+
+    // weird instructions
+    CSRRW(IType),
+    CSRRS(IType),
+    CSRRC(IType),
+    CSRRWI(IType),
+    CSRRSI(IType),
+    CSRRCI(IType),
 }
 
 pub fn decode_instruction(inst: u64) -> Instruction {
@@ -271,7 +279,17 @@ pub fn decode_instruction(inst: u64) -> Instruction {
             if (inst >> 20) & 0xfff == 0 {
                 Instruction::ECALL
             } else {
-                panic!("Why is this not an ecall")
+                let i_type = parse_i_type(inst);
+                match i_type.funct3 {
+                    0 => Instruction::EBREAK,
+                    1 => Instruction::CSRRW(i_type),
+                    2 => Instruction::CSRRS(i_type),
+                    3 => Instruction::CSRRC(i_type),
+                    5 => Instruction::CSRRWI(i_type),
+                    6 => Instruction::CSRRSI(i_type),
+                    7 => Instruction::CSRRCI(i_type),
+                    _ => panic!("Unknown funct3 for I-type instruction"),
+                }
             }
         }
         0b0011011 => {
@@ -310,7 +328,7 @@ pub fn decode_instruction(inst: u64) -> Instruction {
                 _ => panic!("Unknown funct3 for R-type instruction"),
             }
         }
-        _ => panic!("Unknown opcode"),
+        _ => panic!("Unknown opcode: {:b}", opcode),
     }
 }
 
@@ -515,5 +533,44 @@ pub fn execute_instruction(inst: Instruction, emulator: &mut Emulator) {
         Instruction::SRAIW(i_type) => {
             cpu.registers[i_type.rd as usize] = crop_to_32_and_sign_extend((cpu.registers[i_type.rs1 as usize] >> (i_type.imm & 0b111111)) as i64);
         }
+
+        // weird Instructions
+        Instruction::CSRRW(i_type) => {
+            let address = i_type.imm as usize;
+            let old_value = cpu.registers[i_type.rs1 as usize];
+            cpu.registers[i_type.rd as usize] = memory.read_u64(address) as i64;
+            memory.write_u64(address, old_value as u64);
+        }
+        Instruction::CSRRS(i_type) => {
+            let address = i_type.imm as usize;
+            let old_value = memory.read_u64(address) as i64;
+            cpu.registers[i_type.rd as usize] = old_value;
+            memory.write_u64(address, (old_value | cpu.registers[i_type.rs1 as usize]) as u64);
+        }
+        Instruction::CSRRC(i_type) => {
+            let address = i_type.imm as usize;
+            let old_value = memory.read_u64(address) as i64;
+            cpu.registers[i_type.rd as usize] = old_value;
+            memory.write_u64(address, (old_value & !cpu.registers[i_type.rs1 as usize]) as u64);
+        }
+        Instruction::CSRRWI(i_type) => {
+            let address = i_type.imm as usize;
+            let old_value = cpu.registers[i_type.rs1 as usize];
+            cpu.registers[i_type.rd as usize] = memory.read_u64(address) as i64;
+            memory.write_u64(address, old_value as u64);
+        }
+        Instruction::CSRRSI(i_type) => {
+            let address = i_type.imm as usize;
+            let old_value = memory.read_u64(address) as i64;
+            cpu.registers[i_type.rd as usize] = old_value;
+            memory.write_u64(address, (old_value | cpu.registers[i_type.rs1 as usize]) as u64);
+        }
+        Instruction::CSRRCI(i_type) => {
+            let address = i_type.imm as usize;
+            let old_value = memory.read_u64(address) as i64;
+            cpu.registers[i_type.rd as usize] = old_value;
+            memory.write_u64(address, (old_value & !cpu.registers[i_type.rs1 as usize]) as u64);
+        }
+
     }
 }
