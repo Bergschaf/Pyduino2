@@ -13,7 +13,6 @@ fn crop_to_32_and_sign_extend(val: i64) -> i64 {
 
 #[derive(Debug)]
 pub struct RType {
-    opcode: u8,
     rd: u8,
     funct3: u8,
     rs1: u8,
@@ -23,7 +22,6 @@ pub struct RType {
 
 #[derive(Debug)]
 pub struct IType {
-    opcode: u8,
     rd: u8,
     funct3: u8,
     rs1: u8,
@@ -32,7 +30,6 @@ pub struct IType {
 
 #[derive(Debug)]
 pub struct SType {
-    opcode: u8,
     imm: i32,
     funct3: u8,
     rs1: u8,
@@ -41,7 +38,6 @@ pub struct SType {
 
 #[derive(Debug)]
 pub struct BType {
-    opcode: u8,
     imm: i32,
     funct3: u8,
     rs1: u8,
@@ -50,21 +46,18 @@ pub struct BType {
 
 #[derive(Debug)]
 pub struct UType {
-    opcode: u8,
     rd: u8,
     imm: i32,
 }
 
 #[derive(Debug)]
 pub struct JType {
-    opcode: u8,
     rd: u8,
     imm: i32,
 }
 
 pub fn parse_r_type(inst: u64) -> RType {
     RType {
-        opcode: (inst & 0b1111111) as u8,
         rd: ((inst >> 7) & 0b11111) as u8,
         funct3: ((inst >> 12) & 0b111) as u8,
         rs1: ((inst >> 15) & 0b11111) as u8,
@@ -75,7 +68,6 @@ pub fn parse_r_type(inst: u64) -> RType {
 
 pub fn parse_i_type(inst: u64) -> IType {
     IType {
-        opcode: (inst & 0b1111111) as u8,
         rd: ((inst >> 7) & 0b11111) as u8,
         funct3: ((inst >> 12) & 0b111) as u8,
         rs1: ((inst >> 15) & 0b11111) as u8,
@@ -85,7 +77,6 @@ pub fn parse_i_type(inst: u64) -> IType {
 
 pub fn parse_s_type(inst: u64) -> SType {
     SType {
-        opcode: (inst & 0b1111111) as u8,
         imm: sign_extend((((inst >> 7) & 0b11111) | ((inst >> 25) & 0b1111111) << 5), 12) as i32,
         funct3: ((inst >> 12) & 0b111) as u8,
         rs1: ((inst >> 15) & 0b11111) as u8,
@@ -95,7 +86,6 @@ pub fn parse_s_type(inst: u64) -> SType {
 
 pub fn parse_b_type(inst: u64) -> BType {
     BType {
-        opcode: (inst & 0b1111111) as u8,
         imm: sign_extend((((inst >> 8) & 0b1111) | ((inst >> 25) & 0b111111) << 4 | ((inst >> 7) & 0b1) << 10 | ((inst >> 31) & 0b1) << 11) << 1, 13) as i32,
         funct3: ((inst >> 12) & 0b111) as u8,
         rs1: ((inst >> 15) & 0b11111) as u8,
@@ -105,7 +95,6 @@ pub fn parse_b_type(inst: u64) -> BType {
 
 pub fn parse_u_type(inst: u64) -> UType {
     UType {
-        opcode: (inst & 0b1111111) as u8,
         rd: ((inst >> 7) & 0b11111) as u8,
         imm: sign_extend(((inst >> 12) & 0b11111111111111111111) << 12, 32) as i32,
     }
@@ -113,7 +102,6 @@ pub fn parse_u_type(inst: u64) -> UType {
 
 pub fn parse_j_type(inst: u64) -> JType {
     JType {
-        opcode: (inst & 0b1111111) as u8,
         rd: ((inst >> 7) & 0b11111) as u8,
         imm: sign_extend((((inst >> 21) & 0b1111111111) | ((inst >> 20) & 0b1) << 10 | ((inst >> 12) & 0b11111111) << 11 | ((inst >> 31) & 0b1) << 19) << 1, 21) as i32,
     }
@@ -185,7 +173,166 @@ pub enum Instruction {
     CSRRCI(IType),
 }
 
-pub fn decode_instruction(inst: u64) -> Instruction {
+pub fn decode_CR(inst: u16) -> (u8, u8, u8) { // funct (last bit), rd/rs1, rs2
+    let funct = (inst >> 12) & 0b1;
+    let rd = (inst >> 7) & 0b11111;
+    let rs2 = (inst >> 2) & 0b11111;
+    (funct as u8, rd as u8, rs2 as u8)
+}
+
+pub fn decode_CI(inst: u16) -> (u8, i32) { // rd, imm
+    let rd = (inst >> 7) & 0b11111;
+    let imm_5 = (inst >> 12) & 0b1;
+    let imm_4_0 = (inst >> 2) & 0b11111;
+    let imm = (imm_5 << 5) | imm_4_0;
+    (rd as u8, imm as i32)
+}
+
+pub fn decode_CSS(inst: u16) -> (u8, i32) { // rs2, imm
+    let rs2 = (inst >> 2) & 0b11111;
+    let imm = (inst >> 7) & 0b111111;
+    (rs2 as u8, imm as i32)
+}
+
+pub fn decode_CIW(inst: u16) -> (u8, i32) { // rd', imm
+    let rd_ = (inst >> 2) & 0b111;
+    let imm = (inst >> 5) & 0b11111111;
+    (rd_ as u8, imm as i32)
+}
+
+pub fn decode_CL_CS(inst: u16) -> (u8, u8, i32) { // rs1', rd'/rs2', imm
+    let rd_ = (inst >> 2) & 0b111;
+    let rs1_ = (inst >> 7) & 0b111;
+    let imm_1_2 = (inst >> 5) & 0b11;
+    let imm_rest = (inst >> 10) & 0b111;
+    let imm = (imm_rest << 2) | imm_1_2;
+    (rs1_ as u8, rd_ as u8, imm as i32)
+}
+
+pub fn decode_CB(inst: u16) -> (u8, i32) { // rs1', offset
+    let rs1_ = (inst >> 7) & 0b111;
+    let offset_start = (inst >> 2) & 0b11111;
+    let offset_end = (inst >> 10) & 0b111;
+    let offset = (offset_end << 5) | offset_start;
+    (rs1_ as u8, offset as i32)
+}
+
+pub fn decode_CJ(inst: u16) -> (i32) { // jump target
+    // TODO maybe sign extend
+    ((inst >> 2) & 0b11111111111) as i32
+}
+
+pub fn decode_compressed_instruction(inst: u64) -> Option<Instruction> {
+    let opcode = inst & 0b11;
+    let funct3 = (inst >> 13) & 0b111;
+    match opcode {
+        0b11 => None,
+        0b10 => {
+            match funct3 {
+                0b000 => {
+                    let rd = ((inst >> 7) & 0b11111) as u8;
+                    let shamt = (((inst >> 2) & 0b11111) | ((inst >> 12) & 0b1) << 5) as u8;
+                    Instruction::SLLI(IType {
+                        rd,
+                        funct3: 0b001,
+                        rs1: rd,
+                        imm: shamt as i32,
+                    })
+                }
+                0b001 => {
+                    panic!("No floating point support")
+                }
+                0b010 => {
+                    // C.LWSP
+                    let rd = ((inst >> 7) & 0b11111) as u8;
+                    let offset_5 = ((inst >> 12) & 0b1) as u8;
+                    let offset_2_4 = ((inst >> 4) & 0b1111) as u8;
+                    let offset_6_7 = ((inst >> 2) & 0b11) as u8;
+                    let offset = (offset_6_7 << 6) | (offset_5 << 5) | (offset_2_4 << 2);
+                    Instruction::LW(IType {
+                        rd,
+                        funct3: 0b010,
+                        rs1: 2,
+                        imm: offset as i32,
+                    })
+                }
+                0b011 => {
+                    // C.LDSP
+                    let rd = ((inst >> 7) & 0b11111) as u8;
+                    let offset_5 = ((inst >> 12) & 0b1) as u8;
+                    let offset_3_4 = ((inst >> 5) & 0b11) as u8;
+                    let offset_6_8 = ((inst >> 2) & 0b111) as u8;
+                    let offset = (offset_6_8 << 6) | (offset_5 << 5) | (offset_3_4 << 3);
+                    Instruction::LD(IType {
+                        rd,
+                        funct3: 0b011,
+                        rs1: 2,
+                        imm: offset as i32,
+                    })
+                }
+                0b100 => {
+                    let funct_4 = ((inst >> 12) & 0b1) as u8;
+                    if (funct_4 == 0) {
+                        // C.JR or C.MV
+                        let rs2 = ((inst >> 2) & 0b11111) as u8;
+                        let rs1 = ((inst >> 7) & 0b11111) as u8;
+                        if rs2 == 0 {
+                            // C.JR
+                            Instruction::JALR(IType {
+                                rd: 0,
+                                funct3: 0,
+                                rs1,
+                                imm: 0,
+                            })
+                        } else {
+                            // C.MV
+                            Instruction::ADD(RType {
+                                rd: rs2,
+                                funct3: 0,
+                                rs1,
+                                rs2: 0,
+                                funct7: 0,
+                            })
+                        }
+                    } else {
+                        // C.EBREAK or C.JALR or C.ADD
+                        let rs2 = ((inst >> 2) & 0b11111) as u8;
+                        let rs1 = ((inst >> 7) & 0b11111) as u8;
+                        if rs2 == 0 && rs1 == 0 {
+                            panic!("Why ebreak???")
+                        } else if rs2 == 0 {
+                            // C.JALR
+                            Instruction::JALR(IType {
+                                rd: 1,
+                                funct3: 0,
+                                rs1,
+                                imm: 0,
+                            })
+                        } else {
+                            // C.ADD
+                            Instruction::ADD(RType {
+                                rd: rs1,
+                                funct3: 0,
+                                rs1,
+                                rs2: rs2,
+                                funct7: 0,
+                            })
+                        }
+                    }
+                }
+                0b101 => {
+                    // C.FLDSP
+                    panic!("No floating point support")
+                }
+                0b110 => {
+                    // C.SWSP
+                }
+            }
+        }
+    }
+}
+
+pub fn decode_instruction(inst: u64) -> Instruction { // instruction, was compressed
     let opcode = inst & 0b1111111;
     match opcode {
         0b0110111 => Instruction::LUI(parse_u_type(inst)),
@@ -331,7 +478,6 @@ pub fn decode_instruction(inst: u64) -> Instruction {
         _ => panic!("Unknown opcode: {:b}", opcode),
     }
 }
-
 
 pub fn execute_instruction(inst: Instruction, emulator: &mut Emulator) {
     let cpu = &mut emulator.cpu;
@@ -524,7 +670,7 @@ pub fn execute_instruction(inst: Instruction, emulator: &mut Emulator) {
         Instruction::SD(s_type) => {
             let address = (cpu.registers[s_type.rs1 as usize] + s_type.imm as i64);
             let data = cpu.registers[s_type.rs2 as usize] as u64;
-            memory.write(address.try_into().unwrap(), &data.to_le_bytes());
+            memory.write(address as usize, &data.to_le_bytes());
         }
 
         Instruction::SRLIW(i_type) => {
@@ -537,40 +683,39 @@ pub fn execute_instruction(inst: Instruction, emulator: &mut Emulator) {
         // weird Instructions
         Instruction::CSRRW(i_type) => {
             let address = i_type.imm as usize;
-            let old_value = cpu.registers[i_type.rs1 as usize];
-            cpu.registers[i_type.rd as usize] = memory.read_u64(address) as i64;
-            memory.write_u64(address, old_value as u64);
+            let old_value = cpu.csr[address];
+            cpu.csr[address] = cpu.registers[i_type.rs1 as usize];
+            cpu.registers[i_type.rd as usize] = old_value;
         }
         Instruction::CSRRS(i_type) => {
             let address = i_type.imm as usize;
-            let old_value = memory.read_u64(address) as i64;
+            let old_value = cpu.csr[address];
+            cpu.csr[address] = cpu.csr[address] | cpu.registers[i_type.rs1 as usize];
             cpu.registers[i_type.rd as usize] = old_value;
-            memory.write_u64(address, (old_value | cpu.registers[i_type.rs1 as usize]) as u64);
         }
         Instruction::CSRRC(i_type) => {
             let address = i_type.imm as usize;
-            let old_value = memory.read_u64(address) as i64;
+            let old_value = cpu.csr[address];
+            cpu.csr[address] = cpu.csr[address] & !cpu.registers[i_type.rs1 as usize];
             cpu.registers[i_type.rd as usize] = old_value;
-            memory.write_u64(address, (old_value & !cpu.registers[i_type.rs1 as usize]) as u64);
         }
         Instruction::CSRRWI(i_type) => {
             let address = i_type.imm as usize;
-            let old_value = cpu.registers[i_type.rs1 as usize];
-            cpu.registers[i_type.rd as usize] = memory.read_u64(address) as i64;
-            memory.write_u64(address, old_value as u64);
+            let old_value = cpu.csr[address];
+            cpu.csr[address] = i_type.rs1 as i64;
+            cpu.registers[i_type.rd as usize] = old_value;
         }
         Instruction::CSRRSI(i_type) => {
             let address = i_type.imm as usize;
-            let old_value = memory.read_u64(address) as i64;
+            let old_value = cpu.csr[address];
+            cpu.csr[address] = cpu.csr[address] | i_type.rs1 as i64;
             cpu.registers[i_type.rd as usize] = old_value;
-            memory.write_u64(address, (old_value | cpu.registers[i_type.rs1 as usize]) as u64);
         }
         Instruction::CSRRCI(i_type) => {
             let address = i_type.imm as usize;
-            let old_value = memory.read_u64(address) as i64;
+            let old_value = cpu.csr[address];
+            cpu.csr[address] = cpu.csr[address] & !(i_type.rs1 as i64);
             cpu.registers[i_type.rd as usize] = old_value;
-            memory.write_u64(address, (old_value & !cpu.registers[i_type.rs1 as usize]) as u64);
         }
-
     }
 }
