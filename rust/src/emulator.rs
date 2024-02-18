@@ -42,12 +42,17 @@ impl Emulator {
 
     pub fn run(&mut self) {
         loop {
-            let inst = Cpu::next_instruction(self);
+            let (inst, was_compressed) = Cpu::next_instruction(self);
             let prev_pc = self.cpu.pc;
             instructions::execute_instruction(inst, self);
             self.cpu.registers[0] = 0;
             if self.cpu.pc == prev_pc {
-                self.cpu.pc += 4;
+                if was_compressed {
+                    self.cpu.pc += 2;
+                }
+                else {
+                    self.cpu.pc += 4;
+                }
             }
             //self.cpu.print_registers();
         }

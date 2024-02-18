@@ -109,6 +109,7 @@ pub fn parse_j_type(inst: u64) -> JType {
 
 #[derive(Debug)]
 pub enum Instruction {
+    NOP,
     LUI(UType),
     AUIPC(UType),
     JAL(JType),
@@ -196,7 +197,11 @@ pub fn decode_CSS(inst: u16) -> (u8, i32) { // rs2, imm
 
 pub fn decode_CIW(inst: u16) -> (u8, i32) { // rd', imm
     let rd_ = (inst >> 2) & 0b111;
-    let imm = (inst >> 5) & 0b11111111;
+    let imm_3 = (inst >> 5) & 0b1;
+    let imm_2 = (inst >> 6) & 0b1;
+    let imm_9_6 = (inst >> 7) & 0b1111;
+    let imm_5_4 = (inst >> 10) & 0b11;
+    let imm = (imm_9_6 << 6) | (imm_5_4 << 4) | (imm_3 << 3) | (imm_2 << 2);
     (rd_ as u8, imm as i32)
 }
 
@@ -218,8 +223,32 @@ pub fn decode_CB(inst: u16) -> (u8, i32) { // rs1', offset
 }
 
 pub fn decode_CJ(inst: u16) -> (i32) { // jump target
-    // TODO maybe sign extend
-    ((inst >> 2) & 0b11111111111) as i32
+    let inst = inst >> 2;
+    let imm_5 = inst & 0b1;
+    let imm_3_1 = (inst >> 1) & 0b111;
+    let imm_7 = (inst >> 4) & 0b1;
+    let imm_6 = (inst >> 5) & 0b1;
+    let imm_10 = (inst >> 6) & 0b1;
+    let imm_9_8 = (inst >> 7) & 0b11;
+    let imm_4 = (inst >> 9) & 0b1;
+    let imm_11 = (inst >> 10) & 0b1;
+    let imm = (imm_11 << 11) | (imm_10 << 10) | (imm_9_8 << 8) | (imm_7 << 7) | (imm_6 << 6) | (imm_5 << 5) | (imm_4 << 4) | (imm_3_1 << 1);
+    let imm = sign_extend(imm as u64, 12) as i32;
+    imm
+}
+
+pub fn map_rvc_register(reg: u8) -> u8 {
+    match reg {
+        0b000 => 8,
+        0b001 => 9,
+        0b010 => 10,
+        0b011 => 11,
+        0b100 => 12,
+        0b101 => 13,
+        0b110 => 14,
+        0b111 => 15,
+        _ => panic!("Unknown register mapping"),
+    }
 }
 
 pub fn decode_compressed_instruction(inst: u64) -> Option<Instruction> {
@@ -230,109 +259,428 @@ pub fn decode_compressed_instruction(inst: u64) -> Option<Instruction> {
         0b10 => {
             match funct3 {
                 0b000 => {
-                    let rd = ((inst >> 7) & 0b11111) as u8;
-                    let shamt = (((inst >> 2) & 0b11111) | ((inst >> 12) & 0b1) << 5) as u8;
-                    Instruction::SLLI(IType {
-                        rd,
+                    // C.SLL
+                    let (rd, imm) = decode_CI(inst as u16);
+                    Some(Instruction::SLLI(IType {
+                        rd: rd,
                         funct3: 0b001,
                         rs1: rd,
-                        imm: shamt as i32,
-                    })
+                        imm,
+                    }))
                 }
                 0b001 => {
-                    panic!("No floating point support")
+                    panic!("Floating point instructions not supported")
                 }
                 0b010 => {
                     // C.LWSP
-                    let rd = ((inst >> 7) & 0b11111) as u8;
-                    let offset_5 = ((inst >> 12) & 0b1) as u8;
-                    let offset_2_4 = ((inst >> 4) & 0b1111) as u8;
-                    let offset_6_7 = ((inst >> 2) & 0b11) as u8;
-                    let offset = (offset_6_7 << 6) | (offset_5 << 5) | (offset_2_4 << 2);
-                    Instruction::LW(IType {
-                        rd,
-                        funct3: 0b010,
+                    let (rd, imm) = decode_CI(inst as u16);
+                    let imm_7_6 = imm & 0b11;
+                    let imm_4_2 = (imm >> 2) & 0b111;
+                    let imm_5 = (imm >> 5) & 0b1;
+                    let imm = (imm_7_6 << 6) | (imm_5 << 5) | (imm_4_2 << 2);
+                    Some(Instruction::LW(IType {
+                        rd: rd,
+                        funct3: 0b10,
                         rs1: 2,
-                        imm: offset as i32,
-                    })
+                        imm,
+                    }))
                 }
                 0b011 => {
                     // C.LDSP
-                    let rd = ((inst >> 7) & 0b11111) as u8;
-                    let offset_5 = ((inst >> 12) & 0b1) as u8;
-                    let offset_3_4 = ((inst >> 5) & 0b11) as u8;
-                    let offset_6_8 = ((inst >> 2) & 0b111) as u8;
-                    let offset = (offset_6_8 << 6) | (offset_5 << 5) | (offset_3_4 << 3);
-                    Instruction::LD(IType {
-                        rd,
-                        funct3: 0b011,
+                    let (rd, imm) = decode_CI(inst as u16);
+                    let imm_8_6 = imm & 0b111;
+                    let imm_4_3 = (imm >> 3) & 0b11;
+                    let imm_5 = (imm >> 5) & 0b1;
+                    let imm = (imm_8_6 << 6) | (imm_5 << 5) | (imm_4_3 << 3);
+                    Some(Instruction::LD(IType {
+                        rd: rd,
+                        funct3: 0b11,
                         rs1: 2,
-                        imm: offset as i32,
-                    })
+                        imm,
+                    }))
                 }
                 0b100 => {
-                    let funct_4 = ((inst >> 12) & 0b1) as u8;
+                    let (funct_4, rsd, rs2) = decode_CR(inst as u16);
                     if (funct_4 == 0) {
-                        // C.JR or C.MV
-                        let rs2 = ((inst >> 2) & 0b11111) as u8;
-                        let rs1 = ((inst >> 7) & 0b11111) as u8;
-                        if rs2 == 0 {
+                        if (rs2 == 0) {
                             // C.JR
-                            Instruction::JALR(IType {
+                            Some(Instruction::JALR(IType {
                                 rd: 0,
-                                funct3: 0,
-                                rs1,
+                                funct3: 0b000,
+                                rs1: rsd,
                                 imm: 0,
-                            })
+                            }))
                         } else {
                             // C.MV
-                            Instruction::ADD(RType {
-                                rd: rs2,
-                                funct3: 0,
-                                rs1,
+                            Some(Instruction::ADD / RType {
+                                rd: rsd,
+                                funct3: 0b000,
+                                rs1: rs2,
                                 rs2: 0,
-                                funct7: 0,
+                                funct7: 0b0000000,
                             })
                         }
                     } else {
-                        // C.EBREAK or C.JALR or C.ADD
-                        let rs2 = ((inst >> 2) & 0b11111) as u8;
-                        let rs1 = ((inst >> 7) & 0b11111) as u8;
-                        if rs2 == 0 && rs1 == 0 {
-                            panic!("Why ebreak???")
-                        } else if rs2 == 0 {
+                        if (rsd == 0 && rs2 == 0) {
+                            // C.EBREAK
+                            Some(Instruction::EBREAK)
+                        } else if (rs2 == 0) {
                             // C.JALR
-                            Instruction::JALR(IType {
-                                rd: 1,
-                                funct3: 0,
-                                rs1,
+                            Some(Instruction::JALR(IType {
+                                rd: rsd,
+                                funct3: 0b000,
+                                rs1: rsd,
                                 imm: 0,
-                            })
+                            }))
                         } else {
                             // C.ADD
-                            Instruction::ADD(RType {
-                                rd: rs1,
-                                funct3: 0,
-                                rs1,
+                            Some(Instruction::ADD / RType {
+                                rd: rsd,
+                                funct3: 0b000,
+                                rs1: rsd,
                                 rs2: rs2,
-                                funct7: 0,
+                                funct7: 0b0000000,
                             })
                         }
                     }
                 }
                 0b101 => {
-                    // C.FLDSP
-                    panic!("No floating point support")
+                    panic!("Floating point instructions not supported")
                 }
                 0b110 => {
                     // C.SWSP
+                    let (rs1, imm) = decode_CSS(inst as u16);
+                    let imm_7_6 = imm & 0b11;
+                    let imm_5_2 = (imm >> 2) & 0b1111;
+                    let imm = (imm_7_6 << 6) | (imm_5_2 << 2);
+                    Some(Instruction::SW(SType {
+                        rs1: 2,
+                        rs2: rs1,
+                        imm,
+                        funct3: 0b010,
+                    }))
+                }
+                0b111 => {
+                    // C.SDSP
+                    let (rs1, imm) = decode_CSS(inst as u16);
+                    let imm_8_6 = imm & 0b111;
+                    let imm_5_3 = (imm >> 3) & 0b111;
+                    let imm = (imm_8_6 << 6) | (imm_5_3 << 3);
+                    Some(Instruction::SD(SType {
+                        rs1: 2,
+                        rs2: rs1,
+                        imm,
+                        funct3: 0b011,
+                    }))
+                }
+                _ => {
+                    panic!("Unknown funct3 for compressed instruction")
                 }
             }
         }
+        0b01 => {
+            match funct3 {
+                0b000 => {
+                    // C.ADDI or C.NOP
+                    let (rd, imm) = decode_CI(inst as u16);
+                    if rd == 0 && imm == 0 {
+                        return Some(Instruction::NOP);
+                    };
+                    Some(Instruction::ADDI(IType {
+                        rd: rd,
+                        funct3: 0b000,
+                        rs1: rd,
+                        imm,
+                    }))
+                }
+                0b001 => {
+                    // C.ADDIW
+                    let (rd, imm) = decode_CI(inst as u16);
+                    Some(Instruction::ADDIW(IType {
+                        rd: rd,
+                        funct3: 0b000,
+                        rs1: rd,
+                        imm,
+                    }))
+                }
+                0b010 => {
+                    // C.LI
+                    let (rd, imm) = decode_CI(inst as u16);
+                    // sign extend imm
+                    let imm = sign_extend(imm as u64, 6) as i32;
+                    Some(Instruction::ADDI(IType {
+                        rd: rd,
+                        funct3: 0b000,
+                        rs1: 0,
+                        imm,
+                    }))
+                }
+                0b011 => {
+                    // C.LUI or C.ADDI16SP
+                    let (rd, imm) = decode_CI(inst as u16);
+                    if (rd == 2) {
+                        // C.ADDI16SP
+                        let imm_5 = imm & 0b1;
+                        let imm_8_7 = (imm >> 1) & 0b11;
+                        let imm_6 = (imm >> 3) & 0b1;
+                        let imm_4 = (imm >> 4) & 0b1;
+                        let imm_9 = (imm >> 5) & 0b1;
+                        let imm = (imm_9 << 9) | (imm_8_7 << 7) | (imm_6 << 6) | (imm_5 << 5) | (imm_4 << 4);
+                        // TODO immediate decoding may be false
+                        Some(Instruction::ADDI(IType {
+                            rd: 2,
+                            funct3: 0b000,
+                            rs1: 2,
+                            imm,
+                        }))
+                    } else {
+                        let imm = imm << 12;
+                        // TODO immiadiate decoding may be false
+                        Some(Instruction::LUI(UType {
+                            rd: rd,
+                            imm,
+                        }))
+                    }
+                }
+                0b100 => {
+                    // Some stuff
+                    let funct_2 = ((inst >> 10) & 0b11) as u8;
+                    let inst_12 = ((inst >> 12) & 0b1) as u8;
+                    let rsd = ((inst >> 7) & 0b111) as u8;
+                    let imm_start = (inst >> 2) & 0b11111;
+                    match funct_2 {
+                        0b00 => {
+                            // C.SRLI
+                            let imm = (inst_12 << 5) | imm_start;
+                            Some(Instruction::SRLI(IType {
+                                rd: map_rvc_register(rsd),
+                                funct3: 0b101,
+                                rs1: map_rvc_register(rsd),
+                                imm: imm as i32,
+                            }))
+                        }
+                        0b01 => {
+                            // C.SRAI
+                            let imm = (inst_12 << 5) | imm_start;
+                            Some(Instruction::SRAI(IType {
+                                rd: map_rvc_register(rsd),
+                                funct3: 0b101,
+                                rs1: map_rvc_register(rsd),
+                                imm: imm as i32,
+                            }))
+                        }
+                        0b10 => {
+                            // C.ANDI
+                            let imm = (inst_12 << 5) | imm_start;
+                            let imm = sign_extend(imm as u64, 6) as i32;
+                            Some(Instruction::ANDI(IType {
+                                rd: map_rvc_register(rsd),
+                                funct3: 0b111,
+                                rs1: map_rvc_register(rsd),
+                                imm: imm,
+                            }))
+                        }
+                        0b11 => {
+                            let another_funct_2 = (imm_start >> 3) & 0b11;
+                            let rs2 = (imm_start & 0b111) as u8;
+                            match another_funct_2 {
+                                0b00 => {
+                                    // C.SUB or C.SUBW
+                                    if (inst_12) {
+                                        Some(Instruction::SUBW(RType {
+                                            rd: map_rvc_register(rsd),
+                                            funct3: 0b000,
+                                            rs1: map_rvc_register(rsd),
+                                            rs2: map_rvc_register(rs2),
+                                            funct7: 0b0100000,
+                                        }))
+                                    } else {
+                                        Some(Instruction::SUB(RType {
+                                            rd: map_rvc_register(rsd),
+                                            funct3: 0b000,
+                                            rs1: map_rvc_register(rsd),
+                                            rs2: map_rvc_register(rs2),
+                                            funct7: 0b0100000,
+                                        }))
+                                    }
+                                }
+                                0b01 => {
+                                    // C.XOR or C.ADDW
+                                    if (inst_12) {
+                                        Some(Instruction::ADDW(RType {
+                                            rd: map_rvc_register(rsd),
+                                            funct3: 0b100,
+                                            rs1: map_rvc_register(rsd),
+                                            rs2: map_rvc_register(rs2),
+                                            funct7: 0b0000000,
+                                        }))
+                                    } else {
+                                        Some(Instruction::XOR(RType {
+                                            rd: map_rvc_register(rsd),
+                                            funct3: 0b100,
+                                            rs1: map_rvc_register(rsd),
+                                            rs2: map_rvc_register(rs2),
+                                            funct7: 0b0000000,
+                                        }))
+                                    }
+                                }
+                                0b10 => {
+                                    // C.OR or reserved
+                                    if (inst_12) {
+                                        panic!("reserved")
+                                    } else {
+                                        Some(Instruction::OR(RType {
+                                            rd: map_rvc_register(rsd),
+                                            funct3: 0b110,
+                                            rs1: map_rvc_register(rsd),
+                                            rs2: map_rvc_register(rs2),
+                                            funct7: 0b0000000,
+                                        }))
+                                    }
+                                }
+                                0b11 => {
+                                    // C.AND or reserved
+                                    if (inst_12) {
+                                        panic!("reserved")
+                                    } else {
+                                        Some(Instruction::AND(RType {
+                                            rd: map_rvc_register(rsd),
+                                            funct3: 0b111,
+                                            rs1: map_rvc_register(rsd),
+                                            rs2: map_rvc_register(rs2),
+                                            funct7: 0b0000000,
+                                        }))
+                                    }
+                                }
+                                _ => {
+                                    panic!("Unknown funct_2 for compressed instruction")
+                                }
+                            }
+                        }
+                        _ => { panic!("Unknown funct_2 for compressed instruction") }
+                    }
+                }
+                0b101 => {
+                    // C.J
+                    let imm = decode_CJ(inst as u16);
+                    Some(Instruction::JAL(JType {
+                        rd: 0,
+                        imm,
+                    }))
+                }
+                0b110 | 0b111 => {
+                    // C.BEQZ
+                    let (rs1, imm) = decode_CB(inst as u16);
+                    let imm_5 = imm & 0b1;
+                    let imm_2_1 = (imm >> 1) & 0b11;
+                    let imm_7 = (imm >> 3) & 0b1;
+                    let imm_6 = (imm >> 4) & 0b1;
+                    let imm_10 = (imm >> 5) & 0b1;
+                    let imm_9_8 = (imm >> 6) & 0b11;
+                    let imm_4 = (imm >> 8) & 0b1;
+                    let imm_11 = (imm >> 9) & 0b1;
+                    let imm = (imm_11 << 11) | (imm_10 << 10) | (imm_9_8 << 8) | (imm_7 << 7) | (imm_6 << 6) | (imm_5 << 5) | (imm_4 << 4) | (imm_2_1 << 1);
+                    let imm = sign_extend(imm as u64, 12) as i32;
+                    if (funct3 == 0b110) {
+                        Some(Instruction::BEQ(BType {
+                            rs1: map_rvc_register(rs1),
+                            rs2: 0,
+                            imm,
+                            funct3: 0b000,
+                        }))
+                    } else {
+                        Some(Instruction::BNE(BType {
+                            rs1: map_rvc_register(rs1),
+                            rs2: 0,
+                            imm,
+                            funct3: 0b001,
+                        }))
+                    }
+                }
+                _ => { panic!("Unknown funct3 for compressed instruction") }
+            }
+        }
+        0b00 => {
+            match funct3 {
+                0b000 => {
+                    let (rd, imm) = decode_CIW(inst as u16);
+                    Some(Instruction::ADDI(IType {
+                        rd: map_rvc_register(rd),
+                        funct3: 0b000,
+                        rs1: 2,
+                        imm,
+                    }))
+                }
+                0b001 => {
+                    panic!("Floating point instructions not supported")
+                }
+                0b010 => {
+                    let (rs1, rd, imm) = decode_CL_CS(inst as u16);
+                    let imm_6 = imm & 0b1;
+                    let imm_2 = (imm >> 1) & 0b1;
+                    let imm_5_3 = (imm >> 2) & 0b111;
+                    let imm = (imm_6 << 6) | (imm_5_3 << 3) | (imm_2 << 2);
+                    Some(Instruction::LW(IType {
+                        rd: map_rvc_register(rd),
+                        funct3: 0b10,
+                        rs1: map_rvc_register(rs1),
+                        imm,
+                    }))
+                }
+                0b011 => {
+                    let (rs1, rd, imm) = decode_CL_CS(inst as u16);
+                    let imm_6_7 = imm & 0b11;
+                    let imm_5_3 = (imm >> 2) & 0b111;
+                    let imm = (imm_6_7 << 6) | (imm_5_3 << 3);
+                    Some(Instruction::LD(IType {
+                        rd: map_rvc_register(rd),
+                        funct3: 0b11,
+                        rs1: map_rvc_register(rs1),
+                        imm,
+                    }))
+                }
+                0b100 => {
+                    panic!("reserved")
+                }
+                0b101 => {
+                    //
+                    panic!("No floating point instructions")
+                }
+                0b110 => {
+                    // C.SW
+                    let (rs1, rs2, imm) = decode_CL_CS(inst as u16);
+                    let imm_6 = imm & 0b1;
+                    let imm_2 = (imm >> 1) & 0b1;
+                    let imm_5_3 = (imm >> 2) & 0b111;
+                    let imm = (imm_6 << 6) | (imm_5_3 << 3) | (imm_2 << 2);
+                    Some(Instruction::SW(SType {
+                        rs1: map_rvc_register(rs1),
+                        funct3: 0b10,
+                        rs2: map_rvc_register(rs2),
+                        imm,
+                    }))
+                }
+                0b111 => {
+                    // C.SD
+                    let (rs1, rs2, imm) = decode_CL_CS(inst as u16);
+                    let imm_6_7 = imm & 0b11;
+                    let imm_5_3 = (imm >> 2) & 0b111;
+                    let imm = (imm_6_7 << 6) | (imm_5_3 << 3);
+                    Some(Instruction::SD(SType {
+                        rs1: map_rvc_register(rs1),
+                        funct3: 0b11,
+                        rs2: map_rvc_register(rs2),
+                        imm,
+                    }))
+                }
+                _ => { panic!("Unknown funct3 for compressed instruction") }
+            }
+        }
+        _ => panic!("Unknown opcode for compressed instruction")
     }
 }
 
-pub fn decode_instruction(inst: u64) -> Instruction { // instruction, was compressed
+pub fn decode_instruction(inst: u64) -> Instruction {
     let opcode = inst & 0b1111111;
     match opcode {
         0b0110111 => Instruction::LUI(parse_u_type(inst)),

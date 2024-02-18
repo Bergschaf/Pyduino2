@@ -16,13 +16,15 @@ impl Cpu {
             pc: 0,
         }
     }
-    pub fn next_instruction(emulator: &mut Emulator) -> Instruction {
+    pub fn next_instruction(emulator: &mut Emulator) -> (Instruction, bool){
         let instruction = emulator.memory.read_u64(emulator.cpu.pc as usize);
-        let inst:Instruction = instructions::decode_instruction(instruction);
-        print!("Instruction: {:?}\n", inst);
-        print!("PC: 0x{:0x}\n", emulator.cpu.pc);
-        emulator.cpu.print_registers();
-        return inst;
+        let inst_comp = instructions::decode_compressed_instruction(instruction);
+        if inst_comp == None {
+            return (instructions::decode_instruction(instruction), true);
+        }
+        else {
+            return (inst_comp.unwrap(), false);
+        }
     }
 
     pub fn print_registers(&self) {
